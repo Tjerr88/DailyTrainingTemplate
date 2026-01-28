@@ -1,0 +1,558 @@
+<!doctype html>
+<html lang="nl">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>15+5 Daily Circuit Generator</title>
+  <style>
+    :root { --bg:#0b0f14; --card:#121926; --text:#e8eef7; --muted:#a8b3c4; --line:#233044; --acc:#ff9d2e; }
+    *{ box-sizing:border-box; }
+    body{
+      margin:0; padding:16px;
+      font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+      background: radial-gradient(1200px 800px at 20% 0%, #13223a 0%, var(--bg) 55%);
+      color:var(--text);
+    }
+    .wrap{ max-width:900px; margin:0 auto; display:grid; gap:12px; }
+    .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
+    .card{
+      background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
+      border:1px solid var(--line);
+      border-radius:16px;
+      padding:14px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.35);
+    }
+    h1{ font-size:18px; margin:0 0 6px; letter-spacing:.2px; }
+    h2{ font-size:15px; margin:0 0 8px; color:var(--text); }
+    p{ margin:0; color:var(--muted); line-height:1.35; font-size:13px; }
+    .btn{
+      appearance:none; border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.06);
+      color:var(--text);
+      border-radius:12px;
+      padding:10px 12px;
+      font-weight:700;
+      cursor:pointer;
+      transition: transform .04s ease, background .12s ease, border-color .12s ease;
+      user-select:none;
+    }
+    .btn:active{ transform: translateY(1px); }
+    .btn.primary{
+      border-color: rgba(255, 157, 46, 0.55);
+      background: linear-gradient(180deg, rgba(255, 157, 46, 0.22), rgba(255, 157, 46, 0.10));
+    }
+    .btn.danger{
+      border-color: rgba(255, 88, 88, 0.55);
+      background: linear-gradient(180deg, rgba(255, 88, 88, 0.20), rgba(255, 88, 88, 0.08));
+    }
+    .pill{
+      display:inline-flex; gap:6px; align-items:center;
+      padding:6px 10px; border-radius:999px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.04);
+      color:var(--muted);
+      font-size:12px;
+    }
+    .grid{
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+    @media (min-width: 840px){
+      .grid{ grid-template-columns: 1.2fr .8fr; }
+    }
+    .timer{ display:grid; gap:10px; }
+    .time{
+      font-variant-numeric: tabular-nums;
+      font-size:42px;
+      font-weight:900;
+      letter-spacing: .5px;
+      line-height:1;
+    }
+    .label{ color:var(--muted); font-size:12px; }
+    .exercise{
+      border:1px solid var(--line);
+      background: rgba(0,0,0,0.18);
+      border-radius:12px;
+      padding:10px 12px;
+      display:flex; gap:10px; justify-content:space-between; align-items:flex-start;
+    }
+    .ex-left{ display:grid; gap:3px; }
+    .ex-title{ font-weight:800; }
+    .ex-meta{ color:var(--muted); font-size:12px; }
+    .hr{ height:1px; background:var(--line); margin:12px 0; }
+    .small{ font-size:12px; color:var(--muted); }
+    code.kbd{
+      background: rgba(255,255,255,0.08);
+      border:1px solid rgba(255,255,255,0.12);
+      padding:2px 6px; border-radius:8px; font-size:12px;
+    }
+    .mono{ font-variant-numeric: tabular-nums; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="card">
+      <h1>15 + 5 Daily Circuit (Single KB)</h1>
+      <p>
+        Genereert elke sessie 4 oefeningen (Squat / Hinge / Push / Pull) voor <b>15 minuten</b>, gevolgd door een
+        <b>5 minuten</b> loaded carry finisher. Regels: <span class="mono">subcategorie ≠ vorige sessie</span>; binnen de gekozen subcategorie <span class="mono">niet dezelfde oefening</span> als vorige keer binnen die subcategorie.
+      </p>
+      <div class="row" style="margin-top:10px;">
+        <button id="btnGenerate" class="btn primary">Genereer sessie</button>
+        <button id="btnResetMemory" class="btn danger" title="Wist alleen de selectie-geheugens, niet je browser.">Reset geheugen</button>
+        <span id="wakeStatus" class="pill">Wakelock: <b>uit</b></span>
+        <span class="pill">Beep: <b>aan</b></span>
+      </div>
+      <p class="small" style="margin-top:10px;">
+        Tip: Zet je telefoon op <b>niet storen</b>. Laat reps simpel: grinds 3–5, single-leg 3–4/zijde, ballistics 5–10.
+      </p>
+    </div>
+
+    <div class="grid">
+      <div class="card">
+        <h2>Vandaag</h2>
+        <div id="sessionList" style="display:grid; gap:10px;">
+          <p class="small">Klik <b>Genereer sessie</b> om te starten.</p>
+        </div>
+        <div class="hr"></div>
+        <h2>Loaded Carry Finisher</h2>
+        <div id="carryBox" class="exercise" style="align-items:center;">
+          <div class="ex-left">
+            <div class="ex-title" id="carryTitle">—</div>
+            <div class="ex-meta" id="carryMeta">5:00 finisher</div>
+          </div>
+          <div class="pill">5 min</div>
+        </div>
+        <p class="small" style="margin-top:10px;">
+          Loaded carry opties (single bell): suitcase, front rack, overhead, <b>front rack march</b>, cook drill march, get-up carry.
+        </p>
+      </div>
+
+      <div class="card timer">
+        <div>
+          <div class="label">15 min Circuit Timer</div>
+          <div id="t15" class="time">15:00</div>
+          <div class="row">
+            <button id="start15" class="btn primary">Start</button>
+            <button id="pause15" class="btn">Pauze</button>
+            <button id="reset15" class="btn">Reset</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div>
+          <div class="label">5 min Carry Timer</div>
+          <div id="t5" class="time">05:00</div>
+          <div class="row">
+            <button id="start5" class="btn primary">Start</button>
+            <button id="pause5" class="btn">Pauze</button>
+            <button id="reset5" class="btn">Reset</button>
+          </div>
+        </div>
+
+        <div class="hr"></div>
+
+        <div class="small">
+          <div><b>Wakelock</b> blijft actief zolang een timer loopt (als je browser het ondersteunt).</div>
+          <div style="margin-top:6px;">Sneltoets: <code class="kbd">G</code> = genereer sessie</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+<script>
+(() => {
+  // -------------------------
+  // Exercise library (as discussed)
+  // -------------------------
+  const LIB = {
+    squat: {
+      label: "Squat",
+      subcats: {
+        symmetric: {
+          label: "Symmetrisch",
+          exercises: ["Goblet Squat", "Single-Side Front Squat", "Heels-Elevated Goblet (\"Hack\" Squat)"]
+        },
+        asymmetric: {
+          label: "Asymmetrisch",
+          exercises: ["Reverse Lunge", "Side Lunge / Cossack", "Curtsy Lunge (optioneel)"]
+        },
+        singleleg: {
+          label: "Single Leg",
+          exercises: ["Step-up", "Bulgarian Split Squat", "Ring-Assisted Pistol (of box pistol)"]
+        }
+      }
+    },
+    hinge: {
+      label: "Hinge",
+      subcats: {
+        deadlift: {
+          label: "Deadlift",
+          exercises: ["Single-Leg Deadlift", "B-Stance Deadlift", "Good Morning (licht)"]
+        },
+        hipthrust: {
+          label: "Hip Thrust",
+          exercises: ["Hip Thrust", "B-Stance Hip Thrust", "Single-Leg Hip Thrust"]
+        },
+        ballistic: {
+          label: "Ballistic",
+          exercises: ["One-Arm Swing", "Two-Arm Swing", "Hand-to-Hand Swing"]
+        }
+      }
+    },
+    push: {
+      label: "Push",
+      subcats: {
+        horizontal: {
+          label: "Horizontal",
+          exercises: ["Floor Press", "Push-up", "Ring Dips (optioneel, strict)"]
+        },
+        vertical: {
+          label: "Vertical",
+          exercises: ["Military Press", "Half-Kneeling Press", "Top-Down Press"]
+        },
+        ballistic: {
+          label: "Ballistic",
+          exercises: ["Push Press", "Push Jerk", "Long Cycle (solo / niet combineren)"]
+        }
+      }
+    },
+    pull: {
+      label: "Pull",
+      subcats: {
+        horizontal: {
+          label: "Horizontal",
+          exercises: ["Wide Row", "Small Row", "Reverse Fly"]
+        },
+        vertical: {
+          label: "Vertical",
+          exercises: ["Chin-up", "Pull-up", "False-Grip Neutral Pull-up (ringen)"]
+        },
+        ballistic: {
+          label: "Ballistic",
+          exercises: ["Clean", "Snatch", "High Pull"]
+        }
+      }
+    }
+  };
+
+  const CARRIES = [
+    "Suitcase Carry",
+    "Front Rack Carry",
+    "Overhead Carry",
+    "Front Rack March",
+    "Cook Drill March",
+    "Get-up Carry / Partial Get-up Walk"
+  ];
+
+  // -------------------------
+  // Memory model
+  // -------------------------
+  const LS_KEY = "dj_15plus5_memory_v1";
+
+  function defaultMemory() {
+    const mem = { lastCarry: null, patterns: {} };
+    for (const p of Object.keys(LIB)) {
+      mem.patterns[p] = { lastSubcat: null, lastExerciseBySubcat: {} };
+      for (const sc of Object.keys(LIB[p].subcats)) {
+        mem.patterns[p].lastExerciseBySubcat[sc] = null;
+      }
+    }
+    return mem;
+  }
+
+  function loadMemory() {
+    try {
+      const raw = localStorage.getItem(LS_KEY);
+      if (!raw) return defaultMemory();
+      const parsed = JSON.parse(raw);
+
+      const mem = defaultMemory();
+      if (parsed && typeof parsed === "object") {
+        if (parsed.lastCarry) mem.lastCarry = parsed.lastCarry;
+        if (parsed.patterns && typeof parsed.patterns === "object") {
+          for (const p of Object.keys(LIB)) {
+            if (parsed.patterns[p]) {
+              mem.patterns[p].lastSubcat = parsed.patterns[p].lastSubcat ?? null;
+              if (parsed.patterns[p].lastExerciseBySubcat) {
+                for (const sc of Object.keys(LIB[p].subcats)) {
+                  mem.patterns[p].lastExerciseBySubcat[sc] =
+                    parsed.patterns[p].lastExerciseBySubcat[sc] ?? null;
+                }
+              }
+            }
+          }
+        }
+      }
+      return mem;
+    } catch {
+      return defaultMemory();
+    }
+  }
+
+  function saveMemory(mem) {
+    localStorage.setItem(LS_KEY, JSON.stringify(mem));
+  }
+
+  // -------------------------
+  // Random helpers
+  // -------------------------
+  function randInt(n) { return Math.floor(Math.random() * n); }
+  function choice(arr) { return arr[randInt(arr.length)]; }
+  function shuffle(arr) {
+    const a = arr.slice();
+    for (let i = a.length - 1; i > 0; i--) {
+      const j = randInt(i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+
+  function pickSubcategory(patternKey, mem) {
+    const subcats = Object.keys(LIB[patternKey].subcats);
+    const last = mem.patterns[patternKey].lastSubcat;
+    const allowed = subcats.filter(sc => sc !== last);
+    return choice(allowed.length ? allowed : subcats);
+  }
+
+  function pickExercise(patternKey, subcatKey, mem) {
+    const exList = LIB[patternKey].subcats[subcatKey].exercises;
+    const lastEx = mem.patterns[patternKey].lastExerciseBySubcat[subcatKey];
+    const allowed = exList.filter(x => x !== lastEx);
+    return choice(allowed.length ? allowed : exList);
+  }
+
+  function generateSession() {
+    const mem = loadMemory();
+    const picks = [];
+
+    for (const patternKey of ["squat", "hinge", "push", "pull"]) {
+      const subcatKey = pickSubcategory(patternKey, mem);
+      const ex = pickExercise(patternKey, subcatKey, mem);
+
+      picks.push({
+        patternKey,
+        patternLabel: LIB[patternKey].label,
+        subcatKey,
+        subcatLabel: LIB[patternKey].subcats[subcatKey].label,
+        exercise: ex
+      });
+
+      // update memory for this pattern
+      mem.patterns[patternKey].lastSubcat = subcatKey;
+      mem.patterns[patternKey].lastExerciseBySubcat[subcatKey] = ex;
+    }
+
+    const circuit = shuffle(picks);
+
+    // carry: avoid exact repeat if possible
+    const carryAllowed = CARRIES.filter(c => c !== mem.lastCarry);
+    const carry = choice(carryAllowed.length ? carryAllowed : CARRIES);
+    mem.lastCarry = carry;
+
+    saveMemory(mem);
+    return { circuit, carry };
+  }
+
+  // -------------------------
+  // UI render
+  // -------------------------
+  const sessionList = document.getElementById("sessionList");
+  const carryTitle = document.getElementById("carryTitle");
+  const carryMeta = document.getElementById("carryMeta");
+
+  function renderSession(data) {
+    sessionList.innerHTML = "";
+    data.circuit.forEach((item, idx) => {
+      const div = document.createElement("div");
+      div.className = "exercise";
+      div.innerHTML = `
+        <div class="ex-left">
+          <div class="ex-title">${idx+1}. ${item.exercise}</div>
+          <div class="ex-meta">${item.patternLabel} • ${item.subcatLabel}</div>
+        </div>
+        <div class="pill">${item.patternLabel}</div>
+      `;
+      sessionList.appendChild(div);
+    });
+
+    carryTitle.textContent = data.carry;
+    carryMeta.textContent = "5:00 finisher • wissel zijde wanneer nodig";
+  }
+
+  // -------------------------
+  // Beep (Web Audio)
+  // -------------------------
+  function beep(times = 1) {
+    try {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      const now = ctx.currentTime;
+
+      for (let i = 0; i < times; i++) {
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = "sine";
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.0001, now + i * 0.25);
+        gain.gain.exponentialRampToValueAtTime(0.2, now + i * 0.25 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.25 + 0.18);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start(now + i * 0.25);
+        osc.stop(now + i * 0.25 + 0.20);
+      }
+      setTimeout(() => ctx.close(), 600);
+    } catch (e) {}
+  }
+
+  // -------------------------
+  // Wakelock
+  // -------------------------
+  let wakeLock = null;
+  const wakeStatus = document.getElementById("wakeStatus");
+  function setWakeStatus(on) {
+    wakeStatus.innerHTML = `Wakelock: <b>${on ? "aan" : "uit"}</b>`;
+  }
+
+  async function requestWakeLock() {
+    try {
+      if (!("wakeLock" in navigator)) { setWakeStatus(false); return; }
+      if (wakeLock) return;
+      wakeLock = await navigator.wakeLock.request("screen");
+      setWakeStatus(true);
+      wakeLock.addEventListener("release", () => {
+        wakeLock = null;
+        setWakeStatus(false);
+      });
+    } catch (e) {
+      wakeLock = null;
+      setWakeStatus(false);
+    }
+  }
+
+  async function releaseWakeLock() {
+    try {
+      if (wakeLock) {
+        await wakeLock.release();
+        wakeLock = null;
+      }
+    } finally {
+      setWakeStatus(false);
+    }
+  }
+
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "visible" && (timer15.running || timer5.running)) {
+      requestWakeLock();
+    }
+  });
+
+  // -------------------------
+  // Timers
+  // -------------------------
+  function fmt(sec) {
+    const m = Math.floor(sec / 60);
+    const s = sec % 60;
+    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  }
+
+  function makeTimer(totalSeconds, el) {
+    return {
+      total: totalSeconds,
+      left: totalSeconds,
+      running: false,
+      _t: null,
+      render() { el.textContent = fmt(this.left); },
+      start(onDone) {
+        if (this.running) return;
+        this.running = true;
+        this._tick(onDone);
+      },
+      pause() {
+        this.running = false;
+        if (this._t) clearTimeout(this._t);
+        this._t = null;
+      },
+      reset() {
+        this.pause();
+        this.left = this.total;
+        this.render();
+      },
+      _tick(onDone) {
+        this.render();
+        if (!this.running) return;
+
+        if (this.left <= 0) {
+          this.running = false;
+          this._t = null;
+          try { onDone && onDone(); } catch {}
+          return;
+        }
+
+        this._t = setTimeout(() => {
+          this.left -= 1;
+          this._tick(onDone);
+        }, 1000);
+      }
+    };
+  }
+
+  const timer15 = makeTimer(15 * 60, document.getElementById("t15"));
+  const timer5  = makeTimer( 5 * 60, document.getElementById("t5"));
+  timer15.render();
+  timer5.render();
+
+  function anyTimerRunning() { return timer15.running || timer5.running; }
+
+  function onTimerStart() { requestWakeLock(); }
+  function onTimerStopMaybe() { if (!anyTimerRunning()) releaseWakeLock(); }
+
+  document.getElementById("start15").addEventListener("click", () => {
+    onTimerStart();
+    timer15.start(() => { beep(1); onTimerStopMaybe(); });
+  });
+  document.getElementById("pause15").addEventListener("click", () => { timer15.pause(); onTimerStopMaybe(); });
+  document.getElementById("reset15").addEventListener("click", () => { timer15.reset(); onTimerStopMaybe(); });
+
+  document.getElementById("start5").addEventListener("click", () => {
+    onTimerStart();
+    timer5.start(() => { beep(1); onTimerStopMaybe(); });
+  });
+  document.getElementById("pause5").addEventListener("click", () => { timer5.pause(); onTimerStopMaybe(); });
+  document.getElementById("reset5").addEventListener("click", () => { timer5.reset(); onTimerStopMaybe(); });
+
+  // -------------------------
+  // Generate + reset memory
+  // -------------------------
+  function doGenerate() {
+    const data = generateSession();
+    renderSession(data);
+  }
+
+  document.getElementById("btnGenerate").addEventListener("click", () => {
+    doGenerate();
+    timer15.reset();
+    timer5.reset();
+  });
+
+  document.getElementById("btnResetMemory").addEventListener("click", () => {
+    localStorage.removeItem(LS_KEY);
+    sessionList.innerHTML = `<p class="small">Geheugen gewist. Klik <b>Genereer sessie</b>.</p>`;
+    carryTitle.textContent = "—";
+    carryMeta.textContent = "5:00 finisher";
+  });
+
+  document.addEventListener("keydown", (e) => {
+    if (e.key.toLowerCase() === "g") {
+      e.preventDefault();
+      document.getElementById("btnGenerate").click();
+    }
+  });
+
+})();
+</script>
+</body>
+</html>
