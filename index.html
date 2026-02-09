@@ -3,7 +3,7 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>15+5 Daily Circuit Generator</title>
+  <title>DTT – Daily Training Template</title>
   <style>
     :root { --bg:#0b0f14; --card:#121926; --text:#e8eef7; --muted:#a8b3c4; --line:#233044; --acc:#ff9d2e; }
     *{ box-sizing:border-box; }
@@ -93,21 +93,14 @@
 <body>
   <div class="wrap">
     <div class="card">
-      <h1>15 + 5 Daily Circuit (Single KB)</h1>
-      <p>
-        Genereert elke sessie 4 oefeningen (Squat / Hinge / Push / Pull) voor <b>15 minuten</b>, gevolgd door een
-        <b>5 minuten</b> loaded carry finisher. Regels: <span class="mono">subcategorie ≠ vorige sessie</span>; binnen de gekozen subcategorie <span class="mono">niet dezelfde oefening</span> als vorige keer binnen die subcategorie.
-      </p>
-      <div class="row" style="margin-top:10px;">
+      <h1>Daily Training Template</h1>
+<div class="row" style="margin-top:10px;">
         <button id="btnGenerate" class="btn primary">Genereer sessie</button>
         <button id="btnResetMemory" class="btn danger" title="Wist alleen de selectie-geheugens, niet je browser.">Reset geheugen</button>
         <span id="wakeStatus" class="pill">Wakelock: <b>uit</b></span>
         <span class="pill">Beep: <b>aan</b></span>
       </div>
-      <p class="small" style="margin-top:10px;">
-        Tip: Zet je telefoon op <b>niet storen</b>. Laat reps simpel: grinds 3–5, single-leg 3–4/zijde, ballistics 5–10.
-      </p>
-    </div>
+</div>
 
     <div class="grid">
       <div class="card">
@@ -124,15 +117,33 @@
           </div>
           <div class="pill">5 min</div>
         </div>
-        <p class="small" style="margin-top:10px;">
-          Loaded carry opties (single bell): suitcase, front rack, overhead, <b>front rack march</b>, cook drill march, get-up carry.
-        </p>
+        
       </div>
 
       <div class="card timer">
+      <div class="row" style="justify-content:space-between; align-items:flex-end; gap:12px;">
+        <div style="display:grid; gap:6px;">
+          <div class="label">Instellingen</div>
+          <div class="row" style="gap:10px; align-items:center;">
+            <span class="pill">Circuit</span>
+            <input id="setCircuit" type="number" min="10" max="30" step="1" value="20"
+                   style="width:72px; padding:6px 8px; border-radius:12px; border:1px solid rgba(255,255,255,0.14); background:rgba(0,0,0,0.25); color:var(--text);">
+            <span class="small">min</span>
+            <span style="width:10px;"></span>
+            <span class="pill">Carry</span>
+            <input id="setCarry" type="number" min="5" max="10" step="1" value="5"
+                   style="width:72px; padding:6px 8px; border-radius:12px; border:1px solid rgba(255,255,255,0.14); background:rgba(0,0,0,0.25); color:var(--text);">
+            <span class="small">min</span>
+          </div>
+          <div class="small">Circuit 10–30 min • Carry 5–10 min</div>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
         <div>
-          <div class="label">15 min Circuit Timer</div>
-          <div id="t15" class="time">15:00</div>
+          <div class="label">Circuit Timer</div>
+          <div id="t15" class="time">20:00</div>
           <div class="row">
             <button id="start15" class="btn primary">Start</button>
             <button id="pause15" class="btn">Pauze</button>
@@ -143,7 +154,7 @@
         <div class="hr"></div>
 
         <div>
-          <div class="label">5 min Carry Timer</div>
+          <div class="label">Carry Timer</div>
           <div id="t5" class="time">05:00</div>
           <div class="row">
             <button id="start5" class="btn primary">Start</button>
@@ -154,10 +165,7 @@
 
         <div class="hr"></div>
 
-        <div class="small">
-          <div><b>Wakelock</b> blijft actief zolang een timer loopt (als je browser het ondersteunt).</div>
-          <div style="margin-top:6px;">Sneltoets: <code class="kbd">G</code> = genereer sessie</div>
-        </div>
+        
       </div>
     </div>
   </div>
@@ -181,7 +189,7 @@
         },
         singleleg: {
           label: "Single Leg",
-          exercises: ["Step-up", "Bulgarian Split Squat", "Box Pistol"]
+          exercises: ["Step-up", "Skater Squat", "Box Pistol"]
         }
       }
     },
@@ -215,7 +223,7 @@
         },
         ballistic: {
           label: "Ballistic",
-          exercises: ["Push Press", "Push Jerk", "Viking Push Press"]
+          exercises: ["Double Push Press", "Push Jerk", "Viking Push Press"]
         }
       }
     },
@@ -232,7 +240,7 @@
         },
         ballistic: {
           label: "Ballistic",
-          exercises: ["Clean", "Snatch", "High Pull"]
+          exercises: ["Double Clean", "Snatch", "High Pull"]
         }
       }
     }
@@ -244,7 +252,7 @@
     "Overhead Carry",
     "Front Rack March",
     "Cook Drill March",
-    "Get-up Carry / Partial Get-up Walk"
+    "Get-Up"
   ];
 
   // -------------------------
@@ -363,6 +371,20 @@
   const carryTitle = document.getElementById("carryTitle");
   const carryMeta = document.getElementById("carryMeta");
 
+  function ladderFor(item){
+    const ex = (item.exercise || "").toLowerCase();
+    const isDouble = ex.includes("double");
+    const isBallistic = (item.subcatKey === "ballistic");
+
+    // Double bell ballistics: 2-4-6-8-10
+    if (isDouble && isBallistic) return "2-4-6-8-10";
+    // Single bell ballistics: 5-10-15-20
+    if (isBallistic) return "5-10-15-20";
+    // Grinds (single or double): 1-2-3-4-5
+    return "1-2-3-4-5";
+  }
+
+
   function renderSession(data) {
     sessionList.innerHTML = "";
     data.circuit.forEach((item, idx) => {
@@ -371,7 +393,7 @@
       div.innerHTML = `
         <div class="ex-left">
           <div class="ex-title">${idx+1}. ${item.exercise}</div>
-          <div class="ex-meta">${item.patternLabel} • ${item.subcatLabel}</div>
+          <div class="ex-meta">${item.patternLabel} • ${item.subcatLabel} • ladder <b>${ladderFor(item)}</b></div>
         </div>
         <div class="pill">${item.patternLabel}</div>
       `;
@@ -481,6 +503,12 @@
         this.left = this.total;
         this.render();
       },
+      setTotal(totalSeconds){
+        this.pause();
+        this.total = totalSeconds;
+        this.left = totalSeconds;
+        this.render();
+      },
       _tick(onDone) {
         this.render();
         if (!this.running) return;
@@ -500,10 +528,64 @@
     };
   }
 
-  const timer15 = makeTimer(15 * 60, document.getElementById("t15"));
+  const timer15 = makeTimer(20 * 60, document.getElementById("t15"));
   const timer5  = makeTimer( 5 * 60, document.getElementById("t5"));
   timer15.render();
   timer5.render();
+
+  // -------------------------
+  // Settings (durations)
+  // -------------------------
+  const SET_KEY = "dtt_20plus5_settings_v1";
+  const setCircuit = document.getElementById("setCircuit");
+  const setCarry   = document.getElementById("setCarry");
+
+  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
+
+  function loadSettings(){
+    try{
+      const raw = localStorage.getItem(SET_KEY);
+      if(!raw) return { circuitMin: 20, carryMin: 5 };
+      const s = JSON.parse(raw);
+      return {
+        circuitMin: clamp(parseInt(s.circuitMin ?? 20, 10) || 20, 10, 30),
+        carryMin:   clamp(parseInt(s.carryMin ?? 5, 10) || 5, 5, 10),
+      };
+    }catch{
+      return { circuitMin: 20, carryMin: 5 };
+    }
+  }
+  function saveSettings(s){
+    localStorage.setItem(SET_KEY, JSON.stringify(s));
+  }
+
+  function applySettings(s){
+    setCircuit.value = s.circuitMin;
+    setCarry.value   = s.carryMin;
+    timer15.setTotal(s.circuitMin * 60);
+    timer5.setTotal(s.carryMin * 60);
+
+    // Update carry meta/pill text in UI
+    const carryPill = document.querySelector('#carryBox .pill');
+    if (carryPill) carryPill.textContent = s.carryMin + " min";
+    carryMeta.textContent = `${String(s.carryMin).padStart(2,"0")}:00 finisher • wissel zijde wanneer nodig`;
+  }
+
+  let SETTINGS = loadSettings();
+  applySettings(SETTINGS);
+
+  function onSettingsChange(){
+    const next = {
+      circuitMin: clamp(parseInt(setCircuit.value,10) || 20, 10, 30),
+      carryMin:   clamp(parseInt(setCarry.value,10) || 5, 5, 10),
+    };
+    SETTINGS = next;
+    saveSettings(next);
+    applySettings(next);
+  }
+  setCircuit.addEventListener("change", onSettingsChange);
+  setCarry.addEventListener("change", onSettingsChange);
+
 
   function anyTimerRunning() { return timer15.running || timer5.running; }
 
