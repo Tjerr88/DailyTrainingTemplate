@@ -260,7 +260,10 @@
   // -------------------------
   const LS_KEY = "dj_15plus5_memory_v1";
 
-  function defaultMemory() {
+  
+  // Active session (persists until "Sessie voltooid")
+  const ACTIVE_KEY = "dtt_active_session_v1";
+function defaultMemory() {
     const mem = { lastCarry: null, patterns: {} };
     for (const p of Object.keys(LIB)) {
       mem.patterns[p] = { lastSubcat: null, lastExerciseBySubcat: {} };
@@ -360,8 +363,8 @@
     const carry = choice(carryAllowed.length ? carryAllowed : CARRIES);
     mem.lastCarry = carry;
 
-    saveMemory(mem);
-    return { circuit, carry };
+    // NOTE: do NOT commit memory here. We commit when the user clicks "Sessie voltooid".
+    return { circuit, carry, memNext: mem };
   }
 
   // -------------------------
@@ -370,6 +373,39 @@
   const sessionList = document.getElementById("sessionList");
   const carryTitle = document.getElementById("carryTitle");
   const carryMeta = document.getElementById("carryMeta");
+
+
+  // -------------------------
+  // Active session helpers
+  // -------------------------
+  function loadActiveSession(){
+    const raw = localStorage.getItem(ACTIVE_KEY);
+    if(!raw) return null;
+    try { return JSON.parse(raw); } catch { return null; }
+  }
+
+  function saveActiveSession(data){
+    localStorage.setItem(ACTIVE_KEY, JSON.stringify(data));
+  }
+
+  function clearActiveSession(){
+    localStorage.removeItem(ACTIVE_KEY);
+  }
+
+
+  // Button state
+  const btnGenerate = document.getElementById("btnGenerate");
+  function setActiveState(active){
+    if(active){
+      btnGenerate.textContent = "Sessie voltooid";
+      btnGenerate.classList.remove("primary");
+      btnGenerate.classList.add("danger");
+    } else {
+      btnGenerate.textContent = "Genereer sessie";
+      btnGenerate.classList.remove("danger");
+      btnGenerate.classList.add("primary");
+    }
+  }
 
   function ladderFor(item){
     const ex = (item.exercise || "").toLowerCase();
@@ -401,7 +437,8 @@
     });
 
     carryTitle.textContent = data.carry;
-    carryMeta.textContent = "5:00 finisher • wissel zijde wanneer nodig";
+    const cm = (typeof SETTINGS === "object" && SETTINGS && typeof SETTINGS.carryMin === "number") ? SETTINGS.carryMin : 5;
+    carryMeta.textContent = `${String(cm).padStart(2,"0")}:00 finisher • wissel zijde wanneer nodig`;
   }
 
   // -------------------------
@@ -574,6 +611,16 @@
   let SETTINGS = loadSettings();
   applySettings(SETTINGS);
 
+
+  // Restore active session (if any) after refresh
+  const existingActive = loadActiveSession();
+  if(existingActive && existingActive.circuit && existingActive.carry){
+    renderSession(existingActive);
+    setActiveState(true);
+  } else {
+    setActiveState(false);
+  }
+
   function onSettingsChange(){
     const next = {
       circuitMin: clamp(parseInt(setCircuit.value,10) || 20, 10, 30),
@@ -607,24 +654,62 @@
   document.getElementById("reset5").addEventListener("click", () => { timer5.reset(); onTimerStopMaybe(); });
 
   // -------------------------
-  // Generate + reset memory
-  // -------------------------
-  function doGenerate() {
-    const data = generateSession();
-    renderSession(data);
-  }
+// Generate + complete active session
+// -------------------------
 
-  document.getElementById("btnGenerate").addEventListener("click", () => {
+function resetSessionUI(){
+  sessionList.innerHTML = `<p class="small">Klik <b>Genereer sessie</b> om te starten.</p>`;
+  carryTitle.textContent = "—";
+  const cm = (typeof SETTINGS === "object" && SETTINGS && typeof SETTINGS.carryMin === "number") ? SETTINGS.carryMin : 5;
+  carryMeta.textContent = `${String(cm).padStart(2,"0")}:00 finisher`;
+}
+
+function doGenerate() {
+  const data = generateSession();          // memory NOT committed yet
+  saveActiveSession(data);                 // persist active session across refresh
+  renderSession(data);
+  setActiveState(true);
+
+  // reset timers for the session
+  timer15.reset();
+  timer5.reset();
+}
+
+function completeActiveSession(){
+  const active = loadActiveSession();
+  if(active && active.memNext){
+    // Commit the planned memory changes now (on completion)
+    saveMemory(active.memNext);
+  }
+  clearActiveSession();
+  setActiveState(false);
+
+  // stop/reset timers and release wakelock if needed
+  timer15.reset();
+  timer5.reset();
+  onTimerStopMaybe();
+
+  resetSessionUI();
+}
+
+btnGenerate.addEventListener("click", () => {
+  const active = loadActiveSession();
+  if(active){
+    completeActiveSession();
+  } else {
     doGenerate();
-    timer15.reset();
-    timer5.reset();
-  });
+  }
+});
 
   document.getElementById("btnResetMemory").addEventListener("click", () => {
+    // Reset selection memory + any active session
     localStorage.removeItem(LS_KEY);
+    clearActiveSession();
+    setActiveState(false);
     sessionList.innerHTML = `<p class="small">Geheugen gewist. Klik <b>Genereer sessie</b>.</p>`;
     carryTitle.textContent = "—";
-    carryMeta.textContent = "5:00 finisher";
+    const cm = (typeof SETTINGS === "object" && SETTINGS && typeof SETTINGS.carryMin === "number") ? SETTINGS.carryMin : 5;
+    carryMeta.textContent = `${String(cm).padStart(2,"0")}:00 finisher`;
   });
 
   document.addEventListener("keydown", (e) => {
