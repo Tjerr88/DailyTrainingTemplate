@@ -3,9 +3,12 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>DTT – Daily Training Template</title>
+  <title>DTT 2.0 – Daily Training Template</title>
   <style>
-    :root { --bg:#0b0f14; --card:#121926; --text:#e8eef7; --muted:#a8b3c4; --line:#233044; --acc:#ff9d2e; }
+    :root{
+      --bg:#0b0f14; --text:#e8eef7; --muted:#a8b3c4; --line:#233044;
+      --acc:#ff9d2e; --good:#37d67a; --mid:#ffb020; --rec:#53a6ff;
+    }
     *{ box-sizing:border-box; }
     body{
       margin:0; padding:16px;
@@ -13,7 +16,7 @@
       background: radial-gradient(1200px 800px at 20% 0%, #13223a 0%, var(--bg) 55%);
       color:var(--text);
     }
-    .wrap{ max-width:900px; margin:0 auto; display:grid; gap:12px; }
+    .wrap{ max-width:980px; margin:0 auto; display:grid; gap:12px; }
     .row{ display:flex; gap:10px; flex-wrap:wrap; align-items:center; }
     .card{
       background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.02));
@@ -31,9 +34,9 @@
       color:var(--text);
       border-radius:12px;
       padding:10px 12px;
-      font-weight:700;
+      font-weight:800;
       cursor:pointer;
-      transition: transform .04s ease, background .12s ease, border-color .12s ease;
+      transition: transform .04s ease, background .12s ease, border-color .12s ease, opacity .12s ease;
       user-select:none;
     }
     .btn:active{ transform: translateY(1px); }
@@ -45,6 +48,20 @@
       border-color: rgba(255, 88, 88, 0.55);
       background: linear-gradient(180deg, rgba(255, 88, 88, 0.20), rgba(255, 88, 88, 0.08));
     }
+    .btn.good{
+      border-color: rgba(55,214,122,0.55);
+      background: linear-gradient(180deg, rgba(55,214,122,0.20), rgba(55,214,122,0.08));
+    }
+    .btn.mid{
+      border-color: rgba(255,176,32,0.55);
+      background: linear-gradient(180deg, rgba(255,176,32,0.20), rgba(255,176,32,0.08));
+    }
+    .btn.rec{
+      border-color: rgba(83,166,255,0.55);
+      background: linear-gradient(180deg, rgba(83,166,255,0.22), rgba(83,166,255,0.10));
+    }
+    .btn:disabled{ opacity:.45; cursor:not-allowed; }
+
     .pill{
       display:inline-flex; gap:6px; align-items:center;
       padding:6px 10px; border-radius:999px;
@@ -53,21 +70,15 @@
       color:var(--muted);
       font-size:12px;
     }
-    .grid{
-      display:grid;
-      grid-template-columns: 1fr;
-      gap:12px;
-    }
-    @media (min-width: 840px){
-      .grid{ grid-template-columns: 1.2fr .8fr; }
-    }
-    .timer{ display:grid; gap:10px; }
+    .pill strong{ color:var(--text); }
+    .grid{ display:grid; grid-template-columns: 1fr; gap:12px; }
+    @media (min-width: 880px){ .grid{ grid-template-columns: 1.2fr .8fr; } }
+
+    .hr{ height:1px; background:var(--line); margin:12px 0; }
+    .small{ font-size:12px; color:var(--muted); }
     .time{
       font-variant-numeric: tabular-nums;
-      font-size:42px;
-      font-weight:900;
-      letter-spacing: .5px;
-      line-height:1;
+      font-size:42px; font-weight:900; letter-spacing:.5px; line-height:1;
     }
     .label{ color:var(--muted); font-size:12px; }
     .exercise{
@@ -78,271 +89,338 @@
       display:flex; gap:10px; justify-content:space-between; align-items:flex-start;
     }
     .ex-left{ display:grid; gap:3px; }
-    .ex-title{ font-weight:800; }
+    .ex-title{ font-weight:850; }
     .ex-meta{ color:var(--muted); font-size:12px; }
-    .hr{ height:1px; background:var(--line); margin:12px 0; }
-    .small{ font-size:12px; color:var(--muted); }
-    code.kbd{
-      background: rgba(255,255,255,0.08);
-      border:1px solid rgba(255,255,255,0.12);
-      padding:2px 6px; border-radius:8px; font-size:12px;
+
+    /* Gate */
+    .gate-grid{ display:grid; gap:12px; }
+    .gate-row{ display:grid; gap:8px; }
+    .score-row{ display:flex; gap:8px; flex-wrap:wrap; }
+    .score-btn{
+      width:44px; height:38px;
+      display:inline-flex; justify-content:center; align-items:center;
+      border-radius:12px;
+      border:1px solid rgba(255,255,255,0.14);
+      background:rgba(255,255,255,0.06);
+      color:var(--text);
+      font-weight:900;
+      cursor:pointer;
+      user-select:none;
+      transition: transform .04s ease, background .12s ease, border-color .12s ease;
     }
-    .mono{ font-variant-numeric: tabular-nums; }
-  </style>
+    .score-btn:active{ transform: translateY(1px); }
+    .score-btn.active{
+      border-color: rgba(255, 157, 46, 0.55);
+      background: linear-gradient(180deg, rgba(255, 157, 46, 0.22), rgba(255, 157, 46, 0.10));
+    }
+    .total{
+      display:flex; gap:10px; align-items:center; justify-content:space-between;
+      border:1px solid var(--line);
+      background: rgba(0,0,0,0.18);
+      border-radius:12px;
+      padding:10px 12px;
+    }
+    .total .n{ font-size:28px; font-weight:900; font-variant-numeric: tabular-nums; }
+    .badge{
+      padding:6px 10px; border-radius:999px; font-size:12px; font-weight:900;
+      border:1px solid rgba(255,255,255,0.14);
+      background: rgba(255,255,255,0.04);
+      color: var(--muted);
+    }
+    .badge.good{ color: rgba(55,214,122,1); border-color: rgba(55,214,122,.4); background: rgba(55,214,122,.08); }
+    .badge.mid{ color: rgba(255,176,32,1); border-color: rgba(255,176,32,.4); background: rgba(255,176,32,.08); }
+    .badge.rec{ color: rgba(83,166,255,1); border-color: rgba(83,166,255,.45); background: rgba(83,166,255,.10); }
+
+    /* Breathing */
+    .breathBox{ display:grid; gap:12px; align-items:center; justify-items:center; padding:8px 0; }
+    .ring{
+      width:220px; height:220px; border-radius:999px;
+      border: 2px solid rgba(255,255,255,0.16);
+      background: radial-gradient(circle at 30% 20%, rgba(255,255,255,0.10), rgba(0,0,0,0.0));
+      display:grid; place-items:center;
+      position: relative;
+      overflow:hidden;
+    }
+    .ring::after{
+      content:"";
+      position:absolute; inset:12px;
+      border-radius:999px;
+      border: 1px solid rgba(255,255,255,0.10);
+    }
+    .ringInner{
+      width:120px; height:120px; border-radius:999px;
+      background: rgba(255,255,255,0.06);
+      border: 1px solid rgba(255,255,255,0.12);
+      display:grid; place-items:center;
+      transition: transform 0.25s linear;
+      z-index:1;
+    }
+    .phase{ font-weight:950; letter-spacing:.6px; text-align:center; }
+    .phaseSub{ font-size:12px; color:var(--muted); margin-top:2px; text-align:center; }
+    .progress{ width:100%; height:10px; border-radius:999px; border:1px solid rgba(255,255,255,0.14); background: rgba(0,0,0,0.25); overflow:hidden; }
+    .progress > div{ height:100%; width:0%; background: linear-gradient(90deg, rgba(255,157,46,0.35), rgba(255,157,46,0.10)); }
+
+    /* Confetti canvas */
+    #confettiCanvas{ position:fixed; inset:0; pointer-events:none; z-index:9999; display:none; }
+  
+    .scale-legend{
+      font-size:12px;
+      color: var(--muted);
+      opacity:.85;
+      margin-top:6px;
+      line-height:1.3;
+    }
+    
+    .score-label{ margin-top:6px; min-height:18px; font-size:12px; color:var(--muted); font-weight:600; }
+.score-btn.active{
+      transform: scale(1.08);
+      font-weight:700;
+    }
+</style>
 </head>
 <body>
-  <div class="wrap">
-    <div class="card">
-      <h1>Daily Training Template</h1>
-<div class="row" style="margin-top:10px;">
-        <button id="btnGenerate" class="btn primary">Genereer sessie</button>
-        <button id="btnResetMemory" class="btn danger" title="Wist alleen de selectie-geheugens, niet je browser.">Reset geheugen</button>
-        <span id="wakeStatus" class="pill">Wakelock: <b>uit</b></span>
-        <span class="pill">Beep: <b>aan</b></span>
-      </div>
-</div>
+<canvas id="confettiCanvas"></canvas>
 
-    <div class="grid">
-      <div class="card">
-        <h2>Vandaag</h2>
-        <div id="sessionList" style="display:grid; gap:10px;">
-          <p class="small">Klik <b>Genereer sessie</b> om te starten.</p>
-        </div>
-        <div class="hr"></div>
-        <h2>Loaded Carry Finisher</h2>
-        <div id="carryBox" class="exercise" style="align-items:center;">
-          <div class="ex-left">
-            <div class="ex-title" id="carryTitle">—</div>
-            <div class="ex-meta" id="carryMeta">5:00 finisher</div>
-          </div>
-          <div class="pill">5 min</div>
-        </div>
-        
-      </div>
-
-      <div class="card timer">
-      <div class="row" style="justify-content:space-between; align-items:flex-end; gap:12px;">
-        <div style="display:grid; gap:6px;">
-          <div class="label">Instellingen</div>
-          <div class="row" style="gap:10px; align-items:center;">
-            <span class="pill">Circuit</span>
-            <input id="setCircuit" type="number" min="10" max="30" step="1" value="20"
-                   style="width:72px; padding:6px 8px; border-radius:12px; border:1px solid rgba(255,255,255,0.14); background:rgba(0,0,0,0.25); color:var(--text);">
-            <span class="small">min</span>
-            <span style="width:10px;"></span>
-            <span class="pill">Carry</span>
-            <input id="setCarry" type="number" min="5" max="10" step="1" value="5"
-                   style="width:72px; padding:6px 8px; border-radius:12px; border:1px solid rgba(255,255,255,0.14); background:rgba(0,0,0,0.25); color:var(--text);">
-            <span class="small">min</span>
-          </div>
-          <div class="small">Circuit 10–30 min • Carry 5–10 min</div>
-        </div>
-      </div>
-
-      <div class="hr"></div>
-
-        <div>
-          <div class="label">Circuit Timer</div>
-          <div id="t15" class="time">20:00</div>
-          <div class="row">
-            <button id="start15" class="btn primary">Start</button>
-            <button id="pause15" class="btn">Pauze</button>
-            <button id="reset15" class="btn">Reset</button>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        <div>
-          <div class="label">Carry Timer</div>
-          <div id="t5" class="time">05:00</div>
-          <div class="row">
-            <button id="start5" class="btn primary">Start</button>
-            <button id="pause5" class="btn">Pauze</button>
-            <button id="reset5" class="btn">Reset</button>
-          </div>
-        </div>
-
-        <div class="hr"></div>
-
-        
-      </div>
+<div class="wrap">
+  <div class="card">
+    <h1>DTT 2.0</h1>
+    <div class="row" style="margin-top:10px;">
+      <button id="btnMain" class="btn primary">Start</button>
+      <button id="btnReset" class="btn danger" title="Wist selectie-geheugen + actieve dagstatus.">Reset</button>
+      <span id="wakeStatus" class="pill">Wakelock: <strong>uit</strong></span>
+      <span class="pill">Beep: <strong>aan</strong></span>
+      <span id="modePill" class="pill">Mode: <strong>—</strong></span>
     </div>
+    <p class="small" style="margin-top:10px;">Gate 1× per dag. Sluit je de app? Dan ga je exact verder waar je was gebleven.</p>
   </div>
+
+  <div class="grid">
+    <div id="leftCard" class="card"></div>
+    <div id="rightCard" class="card"><div id="rightInner"></div></div>
+  </div>
+</div>
 
 <script>
 (() => {
-  // -------------------------
-  // Exercise library (as discussed)
-  // -------------------------
+  const LS_MEM_KEY = "dtt_memory_v2";
+  const LS_ACTIVE_KEY = "dtt_active_v2";
+  const LS_DAY_KEY = "dtt_day_v2";
+
+  const DUR = { fullCircuitSec: 20*60, miniCircuitSec: 15*60, carrySec: 5*60, mobilitySec: 25*60 };
+
   const LIB = {
-    squat: {
-      label: "Squat",
-      subcats: {
-        symmetric: {
-          label: "Symmetrisch",
-          exercises: ["Goblet Squat", "Double Front Squat", "Heels-Elevated Goblet (\"Hack\" Squat)"]
-        },
-        asymmetric: {
-          label: "Asymmetrisch",
-          exercises: ["Reverse Lunge", "Side Lunge / Cossack", "Bulgarian Split Squat"]
-        },
-        singleleg: {
-          label: "Single Leg",
-          exercises: ["Step-up", "Skater Squat", "Box Pistol"]
-        }
-      }
-    },
-    hinge: {
-      label: "Hinge",
-      subcats: {
-        deadlift: {
-          label: "Deadlift",
-          exercises: ["Single-Leg Deadlift", "B-Stance Deadlift", "Double Sumo Deadlift"]
-        },
-        hipthrust: {
-          label: "Hip Thrust",
-          exercises: ["Hip Thrust", "B-Stance Hip Thrust", "Single-Leg Hip Thrust"]
-        },
-        ballistic: {
-          label: "Ballistic",
-          exercises: ["One-Arm Swing", "Two-Arm Swing", "Hand-to-Hand Swing"]
-        }
-      }
-    },
-    push: {
-      label: "Push",
-      subcats: {
-        horizontal: {
-          label: "Horizontal",
-          exercises: ["Floor Press", "Push-up"]
-        },
-        vertical: {
-          label: "Vertical",
-          exercises: ["Military Press", "Half-Kneeling Press", "Top-Down Press"]
-        },
-        ballistic: {
-          label: "Ballistic",
-          exercises: ["Double Push Press", "Push Jerk", "Viking Push Press"]
-        }
-      }
-    },
-    pull: {
-      label: "Pull",
-      subcats: {
-        horizontal: {
-          label: "Horizontal",
-          exercises: ["Wide Row", "Small Row", "Gorilla Row"]
-        },
-        vertical: {
-          label: "Vertical",
-          exercises: ["Chin-up", "Pull-up", "False-Grip Neutral Pull-up (ringen)"]
-        },
-        ballistic: {
-          label: "Ballistic",
-          exercises: ["Double Clean", "Snatch", "High Pull"]
-        }
-      }
-    }
+    squat: { label:"Squat", subcats:{
+      symmetric:{ label:"Symmetrisch", exercises:["Goblet Squat","Double Front Squat","Heels-Elevated Goblet (\"Hack\" Squat)"] },
+      asymmetric:{ label:"Asymmetrisch", exercises:["Reverse Lunge","Side Lunge / Cossack","Bulgarian Split Squat"] },
+      singleleg:{ label:"Single Leg", exercises:["Step-up","Skater Squat","Box Pistol"] },
+    }},
+    hinge: { label:"Hinge", subcats:{
+      deadlift:{ label:"Deadlift", exercises:["Single-Leg Deadlift","B-Stance Deadlift","Double Sumo Deadlift"] },
+      hipthrust:{ label:"Hip Thrust", exercises:["Hip Thrust","B-Stance Hip Thrust","Single-Leg Hip Thrust"] },
+      ballistic:{ label:"Ballistic", exercises:["One-Arm Swing","Two-Arm Swing","Hand-to-Hand Swing"] },
+    }},
+    push: { label:"Push", subcats:{
+      horizontal:{ label:"Horizontal", exercises:["Floor Press","Push-up"] },
+      vertical:{ label:"Vertical", exercises:["Military Press","Half-Kneeling Press","Top-Down Press"] },
+      ballistic:{ label:"Ballistic", exercises:["Double Push Press","Push Jerk","Viking Push Press"] },
+    }},
+    pull: { label:"Pull", subcats:{
+      horizontal:{ label:"Horizontal", exercises:["Wide Row","Small Row","Gorilla Row"] },
+      vertical:{ label:"Vertical", exercises:["Chin-up","Pull-up","False-Grip Neutral Pull-up (ringen)"] },
+      ballistic:{ label:"Ballistic", exercises:["Double Clean","Snatch","High Pull"] },
+    }}
   };
 
-  const CARRIES = [
-    "Suitcase Carry",
-    "Front Rack Carry",
-    "Overhead Carry",
-    "Front Rack March",
-    "Cook Drill March",
-    "Get-Up"
+  const CARRIES = ["Suitcase Carry","Front Rack Carry","Overhead Carry","Front Rack March","Cook Drill March","Get-Up"];
+
+  const MOBILITY = [
+    { kind:"reps", label:"Levator stretch", value:"5x" },
+    { kind:"reps", label:"Deep Lunge Pry", value:"5x" },
+    { kind:"reps", label:"Deep Lunge & Reach", value:"5x" },
+    { kind:"reps", label:"Pidgeon/Childs pose + Reach", value:"5x" },
+    { kind:"reps", label:"Downward Dog + Ankle Pumps", value:"5x" },
+    { kind:"reps", label:"Bend knee Stretch (in downward dog)", value:"5x" },
+    { kind:"reps", label:"Cirkels and reach in Super Couch (half kneeling)", value:"5x" },
+    { kind:"time", label:"Fold over hamstring stretch", value:"15s" },
+    { kind:"time", label:"Thoracic Bridge", value:"15s" },
+    { kind:"reps", label:"Hip Cirkels", value:"5x" },
   ];
 
-  // -------------------------
-  // Memory model
-  // -------------------------
-  const LS_KEY = "dj_15plus5_memory_v1";
+  const leftCard = document.getElementById("leftCard");
+  const rightInner = document.getElementById("rightInner");
+  const btnMain = document.getElementById("btnMain");
+  const btnReset = document.getElementById("btnReset");
+  const wakeStatus = document.getElementById("wakeStatus");
+  const modePill = document.getElementById("modePill");
 
-  
-  // Active session (persists until "Sessie voltooid")
-  const ACTIVE_KEY = "dtt_active_session_v1";
-function defaultMemory() {
-    const mem = { lastCarry: null, patterns: {} };
-    for (const p of Object.keys(LIB)) {
-      mem.patterns[p] = { lastSubcat: null, lastExerciseBySubcat: {} };
-      for (const sc of Object.keys(LIB[p].subcats)) {
-        mem.patterns[p].lastExerciseBySubcat[sc] = null;
+  // --- Date key
+  function todayKey(){
+    const d = new Date();
+    const y = d.getFullYear();
+    const m = String(d.getMonth()+1).padStart(2,"0");
+    const da = String(d.getDate()).padStart(2,"0");
+    return `${y}-${m}-${da}`;
+  }
+
+  // --- Persist helpers
+  function loadJSON(k){ try{ const r = localStorage.getItem(k); return r? JSON.parse(r) : null; }catch{ return null; } }
+  function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+  // -------------------------
+  // Wakelock
+  // -------------------------
+  let wakeLock = null;
+  function setWakeStatus(on){ wakeStatus.innerHTML = `Wakelock: <strong>${on?"aan":"uit"}</strong>`; }
+  async function requestWakeLock(){
+    try{
+      if(!('wakeLock' in navigator)) { setWakeStatus(false); return; }
+      if(wakeLock) return;
+      wakeLock = await navigator.wakeLock.request('screen');
+      setWakeStatus(true);
+      wakeLock.addEventListener('release', () => { wakeLock = null; setWakeStatus(false); });
+    }catch{ wakeLock = null; setWakeStatus(false); }
+  }
+  async function releaseWakeLock(){
+    try{ if(wakeLock){ await wakeLock.release(); wakeLock = null; } }
+    finally{ setWakeStatus(false); }
+  }
+
+  // -------------------------
+  // Beep
+  // -------------------------
+  function beep(times=1){
+    try{
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      const ctx = new AudioContext();
+      const now = ctx.currentTime;
+      for(let i=0;i<times;i++){
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.value = 880;
+        gain.gain.setValueAtTime(0.0001, now + i*0.25);
+        gain.gain.exponentialRampToValueAtTime(0.2, now + i*0.25 + 0.02);
+        gain.gain.exponentialRampToValueAtTime(0.0001, now + i*0.25 + 0.18);
+        osc.connect(gain); gain.connect(ctx.destination);
+        osc.start(now + i*0.25); osc.stop(now + i*0.25 + 0.20);
       }
+      setTimeout(() => ctx.close(), 600);
+    }catch{}
+  }
+
+  // -------------------------
+  // Timer helper
+  // -------------------------
+  function fmt(sec){ const m=Math.floor(sec/60); const s=sec%60; return String(m).padStart(2,'0')+':'+String(s).padStart(2,'0'); }
+
+  function makeTimer(totalSeconds, onTick){
+    return {
+      total: totalSeconds,
+      left: totalSeconds,
+      running: false,
+      _t: null,
+      start(onDone){
+        if(this.running) return;
+        this.running = true;
+        const tick = () => {
+          if(!this.running) return;
+          const f = this._onTick || onTick; f && f(this.left, this.total);
+          if(this.left <= 0){
+            this.running=false; this._t=null;
+            try{ onDone && onDone(); }catch{}
+            return;
+          }
+          this._t = setTimeout(() => { this.left -= 1; tick(); }, 1000);
+        };
+        tick();
+      },
+      pause(){ this.running=false; if(this._t) clearTimeout(this._t); this._t=null; },
+      reset(){ this.pause(); this.left=this.total; { const f = this._onTick || onTick; f && f(this.left,this.total); } },
+      setTotal(totalSeconds){ this.pause(); this.total=totalSeconds; this.left=totalSeconds; { const f = this._onTick || onTick; f && f(this.left,this.total); } },
+    };
+  }
+
+  // -------------------------
+  // Memory model for generation
+  // -------------------------
+  function defaultMemory(){
+    const mem = { lastCarry:null, patterns:{} };
+    for(const p of Object.keys(LIB)){
+      mem.patterns[p] = { lastSubcat:null, lastExerciseBySubcat:{} };
+      for(const sc of Object.keys(LIB[p].subcats)) mem.patterns[p].lastExerciseBySubcat[sc] = null;
     }
     return mem;
   }
-
-  function loadMemory() {
-    try {
-      const raw = localStorage.getItem(LS_KEY);
-      if (!raw) return defaultMemory();
-      const parsed = JSON.parse(raw);
-
-      const mem = defaultMemory();
-      if (parsed && typeof parsed === "object") {
-        if (parsed.lastCarry) mem.lastCarry = parsed.lastCarry;
-        if (parsed.patterns && typeof parsed.patterns === "object") {
-          for (const p of Object.keys(LIB)) {
-            if (parsed.patterns[p]) {
-              mem.patterns[p].lastSubcat = parsed.patterns[p].lastSubcat ?? null;
-              if (parsed.patterns[p].lastExerciseBySubcat) {
-                for (const sc of Object.keys(LIB[p].subcats)) {
-                  mem.patterns[p].lastExerciseBySubcat[sc] =
-                    parsed.patterns[p].lastExerciseBySubcat[sc] ?? null;
-                }
+  function loadMemory(){
+    const parsed = loadJSON(LS_MEM_KEY);
+    if(!parsed) return defaultMemory();
+    const mem = defaultMemory();
+    try{
+      if(parsed.lastCarry) mem.lastCarry = parsed.lastCarry;
+      if(parsed.patterns){
+        for(const p of Object.keys(LIB)){
+          if(parsed.patterns[p]){
+            mem.patterns[p].lastSubcat = parsed.patterns[p].lastSubcat ?? null;
+            if(parsed.patterns[p].lastExerciseBySubcat){
+              for(const sc of Object.keys(LIB[p].subcats)){
+                mem.patterns[p].lastExerciseBySubcat[sc] = parsed.patterns[p].lastExerciseBySubcat[sc] ?? null;
               }
             }
           }
         }
       }
-      return mem;
-    } catch {
-      return defaultMemory();
-    }
+    }catch{}
+    return mem;
   }
+  function saveMemory(mem){ saveJSON(LS_MEM_KEY, mem); }
 
-  function saveMemory(mem) {
-    localStorage.setItem(LS_KEY, JSON.stringify(mem));
-  }
-
-  // -------------------------
   // Random helpers
-  // -------------------------
-  function randInt(n) { return Math.floor(Math.random() * n); }
-  function choice(arr) { return arr[randInt(arr.length)]; }
-  function shuffle(arr) {
+  function randInt(n){ return Math.floor(Math.random()*n); }
+  function choice(arr){ return arr[randInt(arr.length)]; }
+  function shuffle(arr){
     const a = arr.slice();
-    for (let i = a.length - 1; i > 0; i--) {
-      const j = randInt(i + 1);
-      [a[i], a[j]] = [a[j], a[i]];
+    for(let i=a.length-1;i>0;i--){
+      const j = randInt(i+1);
+      [a[i],a[j]] = [a[j],a[i]];
     }
     return a;
   }
-
-  function pickSubcategory(patternKey, mem) {
+  function pickSubcategory(patternKey, mem){
     const subcats = Object.keys(LIB[patternKey].subcats);
     const last = mem.patterns[patternKey].lastSubcat;
     const allowed = subcats.filter(sc => sc !== last);
     return choice(allowed.length ? allowed : subcats);
   }
-
-  function pickExercise(patternKey, subcatKey, mem) {
+  function pickExercise(patternKey, subcatKey, mem){
     const exList = LIB[patternKey].subcats[subcatKey].exercises;
     const lastEx = mem.patterns[patternKey].lastExerciseBySubcat[subcatKey];
     const allowed = exList.filter(x => x !== lastEx);
     return choice(allowed.length ? allowed : exList);
   }
 
-  function generateSession() {
+  function ladderFor(item, mode){
+    const ex = (item.exercise||"").toLowerCase();
+    const isDouble = ex.includes("double");
+    const isBallistic = (item.subcatKey === "ballistic");
+
+    let ladder = "1-2-3-4-5";
+    if(isBallistic && isDouble) ladder = "2-4-6-8-10";
+    else if(isBallistic) ladder = "5-10-15-20";
+
+    if(mode === "MINI"){
+      if(ladder === "1-2-3-4-5") return "1-2-3-4";
+      if(ladder === "5-10-15-20") return "5-10-15";
+      if(ladder === "2-4-6-8-10") return "2-4-6-8";
+    }
+    return ladder;
+  }
+
+  function generateSession(){
     const mem = loadMemory();
     const picks = [];
-
-    for (const patternKey of ["squat", "hinge", "push", "pull"]) {
+    for(const patternKey of ["squat","hinge","push","pull"]){
       const subcatKey = pickSubcategory(patternKey, mem);
       const ex = pickExercise(patternKey, subcatKey, mem);
-
       picks.push({
         patternKey,
         patternLabel: LIB[patternKey].label,
@@ -350,375 +428,833 @@ function defaultMemory() {
         subcatLabel: LIB[patternKey].subcats[subcatKey].label,
         exercise: ex
       });
-
-      // update memory for this pattern
       mem.patterns[patternKey].lastSubcat = subcatKey;
       mem.patterns[patternKey].lastExerciseBySubcat[subcatKey] = ex;
     }
-
     const circuit = shuffle(picks);
-
-    // carry: avoid exact repeat if possible
     const carryAllowed = CARRIES.filter(c => c !== mem.lastCarry);
     const carry = choice(carryAllowed.length ? carryAllowed : CARRIES);
     mem.lastCarry = carry;
-
-    // NOTE: do NOT commit memory here. We commit when the user clicks "Sessie voltooid".
     return { circuit, carry, memNext: mem };
   }
 
   // -------------------------
-  // UI render
+  // Confetti
   // -------------------------
-  const sessionList = document.getElementById("sessionList");
-  const carryTitle = document.getElementById("carryTitle");
-  const carryMeta = document.getElementById("carryMeta");
-
-
-  // -------------------------
-  // Active session helpers
-  // -------------------------
-  function loadActiveSession(){
-    const raw = localStorage.getItem(ACTIVE_KEY);
-    if(!raw) return null;
-    try { return JSON.parse(raw); } catch { return null; }
+  const confCanvas = document.getElementById('confettiCanvas');
+  const confCtx = confCanvas.getContext('2d');
+  function confettiBurst(ms=1400){
+    const w = confCanvas.width = window.innerWidth;
+    const h = confCanvas.height = window.innerHeight;
+    confCanvas.style.display = 'block';
+    const pieces = Array.from({length: 160}, () => ({
+      x: Math.random()*w,
+      y: -20 - Math.random()*h*0.2,
+      vx: (Math.random()*2-1)*6,
+      vy: 3 + Math.random()*8,
+      s: 4 + Math.random()*6,
+      r: Math.random()*Math.PI*2,
+      vr: (Math.random()*2-1)*0.2,
+      a: 1,
+    }));
+    const start = performance.now();
+    const draw = (t) => {
+      const elapsed = t - start;
+      confCtx.clearRect(0,0,w,h);
+      for(const p of pieces){
+        p.x += p.vx;
+        p.y += p.vy;
+        p.r += p.vr;
+        p.vy *= 0.99;
+        p.vx *= 0.995;
+        if(elapsed > ms*0.6) p.a = Math.max(0, 1 - (elapsed - ms*0.6) / (ms*0.4));
+        confCtx.save();
+        confCtx.globalAlpha = p.a;
+        confCtx.translate(p.x,p.y);
+        confCtx.rotate(p.r);
+        // no fixed colors: use varying grayscale + accent tint
+        const shade = 180 + Math.floor(Math.random()*60);
+        confCtx.fillStyle = `rgba(${shade},${shade},${shade},${p.a})`;
+        confCtx.fillRect(-p.s/2, -p.s/2, p.s, p.s*0.6);
+        confCtx.restore();
+      }
+      if(elapsed < ms){ requestAnimationFrame(draw); }
+      else { confCtx.clearRect(0,0,w,h); confCanvas.style.display='none'; }
+    };
+    requestAnimationFrame(draw);
   }
 
-  function saveActiveSession(data){
-    localStorage.setItem(ACTIVE_KEY, JSON.stringify(data));
+  // -------------------------
+  // Rendering: Right panel (timers)
+  // -------------------------
+  const timers = {
+    circuit: null,
+    carry: null,
+    mobility: null,
+    walk: null,
+    breathing: null,
+  };
+
+  function renderRightNone(){
+    rightInner.innerHTML = `
+      <h2>Status</h2>
+      <p class="small">Geen actieve timer.</p>
+    `;
   }
 
-  function clearActiveSession(){
-    localStorage.removeItem(ACTIVE_KEY);
+  function renderRightTimer(title, timerId){
+    rightInner.innerHTML = `
+      <h2>${title}</h2>
+      <div class="label">Timer</div>
+      <div id="timeDisplay" class="time">00:00</div>
+      <div class="row" style="margin-top:10px;">
+        <button id="btnStart" class="btn primary">Start</button>
+        <button id="btnPause" class="btn">Pauze</button>
+        <button id="btnResetT" class="btn">Reset</button>
+      </div>
+      <div id="sub" class="small" style="margin-top:10px;"></div>
+    `;
+
+    const timeEl = document.getElementById('timeDisplay');
+    const sub = document.getElementById('sub');
+
+    const t = timers[timerId];
+    if(!t){ timeEl.textContent = "--:--"; return; }
+
+    const update = (left,total) => {
+      timeEl.textContent = fmt(left);
+      const pct = total ? Math.round((1 - left/total)*100) : 0;
+      sub.textContent = `${pct}%`;
+      persistActive();
+    };
+
+    // rewire onTick
+    t._onTick = update;
+    update(t.left, t.total);
+
+    document.getElementById('btnStart').addEventListener('click', () => {
+      if(timerId === 'walk' || timerId === 'mobility'){
+        // no wakelock
+      } else {
+        requestWakeLock();
+      }
+      t.start(() => {
+        beep(1);
+        // Auto-chaining:
+        if(timerId === 'circuit'){
+          startCarry();
+        }
+      });
+      persistActive();
+    });
+    document.getElementById('btnPause').addEventListener('click', () => {
+      t.pause();
+      if(timerId !== 'walk' && timerId !== 'mobility') releaseWakeLock();
+      persistActive();
+    });
+    document.getElementById('btnResetT').addEventListener('click', () => {
+      t.reset();
+      if(timerId !== 'walk' && timerId !== 'mobility') releaseWakeLock();
+      persistActive();
+    });
   }
 
+  // -------------------------
+  // Active day state
+  // -------------------------
+  function loadDayState(){
+    const st = loadJSON(LS_DAY_KEY);
+    if(!st) return null;
+    if(st.day !== todayKey()) return null;
+    return st;
+  }
+  function saveDayState(st){ saveJSON(LS_DAY_KEY, st); }
 
-  // Button state
-  const btnGenerate = document.getElementById("btnGenerate");
-  function setActiveState(active){
-    if(active){
-      btnGenerate.textContent = "Sessie voltooid";
-      btnGenerate.classList.remove("primary");
-      btnGenerate.classList.add("danger");
-    } else {
-      btnGenerate.textContent = "Genereer sessie";
-      btnGenerate.classList.remove("danger");
-      btnGenerate.classList.add("primary");
+  function loadActive(){
+    const a = loadJSON(LS_ACTIVE_KEY);
+    if(!a) return null;
+    if(a.day !== todayKey()) return null;
+    return a;
+  }
+  function saveActive(a){ saveJSON(LS_ACTIVE_KEY, a); }
+  function clearActive(){ localStorage.removeItem(LS_ACTIVE_KEY); }
+
+  function setModePill(mode){
+    let label = "—";
+    if(mode === 'FULL') label = "DTT 20+5";
+    else if(mode === 'MINI') label = "DTT 15+5";
+    else if(mode === 'RECOVERY') label = "Recovery";
+    else if(mode === 'BREATHING') label = "Breathing";
+    else if(mode === 'WALK') label = "Walk";
+    modePill.innerHTML = `Mode: <strong>${label}</strong>`;
+  }
+
+  // -------------------------
+  // Gate
+  // -------------------------
+  const gateDef = [
+    { key:'soreness', label:'Spierpijn / Herstel', choices:['Pijn','Beperkt','Stijf','Licht stijf','Soepel','Fris'] },
+    { key:'energy',   label:'Energie / Stress',   choices:['Leeg','Zwaar','Moe','Neutraal','Goed','Scherp'] },
+    { key:'sleep',    label:'Slaapkwaliteit',     choices:['Zeer slecht','Slecht','Onderbroken','Oké','Goed','Herstellend'] },
+  ];
+
+function computeBand(total){
+    if(total >= 12) return { band:'GOOD', label:'12–15', cls:'good' };
+    if(total >= 8)  return { band:'MID', label:'8–11', cls:'mid' };
+    return { band:'REC', label:'0–7', cls:'rec' };
+  }
+
+  function renderGate(existing){
+    const _raw = existing?.scores ?? { soreness:null, energy:null, sleep:null };
+    const scores = { soreness: (_raw.soreness ?? null), energy: (_raw.energy ?? null), sleep: (_raw.sleep ?? null) };
+
+    leftCard.innerHTML = `
+      <h2>Recovery Gate</h2>
+      <div class="gate-grid">
+        ${gateDef.map(g => `
+          <div class="gate-row">
+            <div class="label">${g.label}</div>
+            <div class="score-row" data-gkey="${g.key}">
+              ${[0,1,2,3,4,5].map(n => `<div class="score-btn" data-score="${n}">${n}</div>`).join('')}
+            </div>
+            <div class="score-label" id="lbl-${g.key}">—</div>
+          </div>
+        `).join('')}
+        <div class="total">
+          <div>
+            <div class="label">Totaal</div>
+            <div class="n" id="totalN">0</div>
+          </div>
+          <div id="band" class="badge">—</div>
+        </div>
+        <div class="row">
+          <button id="btnStartSession" class="btn primary" disabled>Start sessie</button>
+          <span class="small">(na invullen van alle 3 scores)</span>
+        </div>
+      </div>
+    `;
+
+    const totalEl = document.getElementById('totalN');
+    const bandEl = document.getElementById('band');
+    const btnStart = document.getElementById('btnStartSession');
+
+    function updateUI(){
+      const vals = Object.values(scores);
+      const complete = vals.every(v => typeof v === 'number');
+      const total = vals.reduce((a,b) => a + (typeof b==='number'?b:0), 0);
+      totalEl.textContent = String(total);
+      const b = computeBand(total);
+      bandEl.className = `badge ${b.cls}`;
+      bandEl.textContent = b.label;
+      // update selected text labels
+      gateDef.forEach(g => {
+        const v = scores[g.key];
+        const el = document.getElementById(`lbl-${g.key}`);
+        if(!el) return;
+        if(typeof v === 'number') el.textContent = g.choices[v] ?? '—';
+        else el.textContent = '—';
+      });
+      btnStart.disabled = !complete;
     }
+
+    // restore active styles
+    document.querySelectorAll('.score-row').forEach(row => {
+      const key = row.dataset.gkey;
+      const val = scores[key];
+      row.querySelectorAll('.score-btn').forEach(btn => {
+        if(val !== null && Number(btn.dataset.score) === val) btn.classList.add('active');
+      });
+    });
+
+    document.querySelectorAll('.score-row').forEach(row => {
+      row.addEventListener('click', (e) => {
+        const t = e.target;
+        if(!t.classList.contains('score-btn')) return;
+        const key = row.dataset.gkey;
+        const v = Number(t.dataset.score);
+        scores[key] = v;
+        row.querySelectorAll('.score-btn').forEach(b => b.classList.remove('active'));
+        t.classList.add('active');
+        updateUI();
+      });
+    });
+
+    btnStart.addEventListener('click', () => {
+      const total = Object.values(scores).reduce((a,b)=>a+b,0);
+      const band = computeBand(total).band;
+      const mode = (band === 'GOOD') ? 'FULL' : (band === 'MID') ? 'MINI' : 'RECOVERY';
+
+      // lock gate for today
+      saveDayState({ day: todayKey(), scores, total, modeLocked: mode });
+
+      // create active state
+      if(mode === 'FULL' || mode === 'MINI'){
+        const s = generateSession();
+        saveActive({ day: todayKey(), mode, phase:'TRAINING', session:s, timers:{
+          circuitLeft: (mode==='FULL'?DUR.fullCircuitSec:DUR.miniCircuitSec),
+          carryLeft: DUR.carrySec,
+        }});
+      } else {
+        saveActive({ day: todayKey(), mode, phase:'MOBILITY', timers:{ mobilityLeft: DUR.mobilitySec }, mobilityChecks: {} });
+      }
+
+      boot();
+    });
+
+    updateUI();
+    renderRightNone();
+    setModePill('—');
   }
 
-  function ladderFor(item){
-    const ex = (item.exercise || "").toLowerCase();
-    const isDouble = ex.includes("double");
-    const isBallistic = (item.subcatKey === "ballistic");
+  // -------------------------
+  // Training screen
+  // -------------------------
+  function renderTraining(active){
+    const mode = active.mode;
+    const session = active.session;
 
-    // Double bell ballistics: 2-4-6-8-10
-    if (isDouble && isBallistic) return "2-4-6-8-10";
-    // Single bell ballistics: 5-10-15-20
-    if (isBallistic) return "5-10-15-20";
-    // Grinds (single or double): 1-2-3-4-5
-    return "1-2-3-4-5";
-  }
+    const circuitSec = (mode==='FULL'?DUR.fullCircuitSec:DUR.miniCircuitSec);
 
+    leftCard.innerHTML = `
+      <h2>Vandaag</h2>
+      <div id="sessionList" style="display:grid; gap:10px;"></div>
+      <div class="hr"></div>
+      <h2>Loaded Carry Finisher</h2>
+      <div class="exercise" style="align-items:center;">
+        <div class="ex-left">
+          <div class="ex-title">${session.carry}</div>
+          <div class="ex-meta">05:00 finisher • wissel zijde wanneer nodig</div>
+        </div>
+        <div class="pill">5 min</div>
+      </div>
+      <div class="hr"></div>
+      <div class="row">
+        <button id="btnFinish" class="btn danger">Finish session</button>
+      </div>
+      <p class="small" style="margin-top:8px;">Timers zijn vast: ${mode==='FULL'?'20:00':'15:00'} circuit + 05:00 carry.</p>
+    `;
 
-  function renderSession(data) {
-    sessionList.innerHTML = "";
-    data.circuit.forEach((item, idx) => {
-      const div = document.createElement("div");
-      div.className = "exercise";
+    const list = document.getElementById('sessionList');
+    list.innerHTML = '';
+    session.circuit.forEach((item, idx) => {
+      const div = document.createElement('div');
+      div.className = 'exercise';
       div.innerHTML = `
         <div class="ex-left">
           <div class="ex-title">${idx+1}. ${item.exercise}</div>
-          <div class="ex-meta">${item.patternLabel} • ${item.subcatLabel} • ladder <b>${ladderFor(item)}</b></div>
+          <div class="ex-meta">${item.patternLabel} • ${item.subcatLabel} • ladder <b>${ladderFor(item, mode==='FULL'?'FULL':'MINI')}</b></div>
         </div>
         <div class="pill">${item.patternLabel}</div>
       `;
-      sessionList.appendChild(div);
+      list.appendChild(div);
     });
 
-    carryTitle.textContent = data.carry;
-    const cm = (typeof SETTINGS === "object" && SETTINGS && typeof SETTINGS.carryMin === "number") ? SETTINGS.carryMin : 5;
-    carryMeta.textContent = `${String(cm).padStart(2,"0")}:00 finisher • wissel zijde wanneer nodig`;
+    // Timers
+    timers.circuit = makeTimer(circuitSec, (left,total) => {
+      const a = loadActive();
+      if(!a) return;
+      a.timers.circuitLeft = left;
+      saveActive(a);
+    });
+    timers.carry = makeTimer(DUR.carrySec, (left,total) => {
+      const a = loadActive();
+      if(!a) return;
+      a.timers.carryLeft = left;
+      saveActive(a);
+    });
+
+    // restore time left
+    timers.circuit.left = Math.max(0, active.timers?.circuitLeft ?? circuitSec);
+    timers.carry.left = Math.max(0, active.timers?.carryLeft ?? DUR.carrySec);
+
+    function ensureCircuitRight(){ renderRightTimer(`Circuit (${mode==='FULL'?'20:00':'15:00'})`, 'circuit'); }
+
+    function startCarry(){
+      // switch to carry panel
+      timers.carry.pause();
+      renderRightTimer('Carry (05:00)', 'carry');
+      // auto-start carry (optional). We'll keep manual start.
+    }
+
+    window.startCarry = startCarry;
+
+    // Right panel: show circuit by default
+    ensureCircuitRight();
+    setModePill(mode);
+
+    document.getElementById('btnFinish').addEventListener('click', () => {
+      completeSession();
+    });
+
+    // Auto wakelock only when timer started; on restore we keep off
+    releaseWakeLock();
   }
 
   // -------------------------
-  // Beep (Web Audio)
+  // Mobility screen
   // -------------------------
-  function beep(times = 1) {
-    try {
-      const AudioContext = window.AudioContext || window.webkitAudioContext;
-      const ctx = new AudioContext();
-      const now = ctx.currentTime;
+  function renderMobility(active){
+    leftCard.innerHTML = `
+      <h2>Vandaag</h2>
+      <div class="small">Volg de routine in volgorde. Vink af wat je gedaan hebt.</div>
+      <div style="display:grid; gap:10px; margin-top:10px;" id="mobList"></div>
+      <div class="hr"></div>
+      <div class="row" style="gap:10px;">
+        <button id="btnAddWalk" class="btn rec">Add walk</button>
+        <button id="btnAddBreath" class="btn primary">Add breathing</button>
+        <button id="btnFinish" class="btn danger">Finish session</button>
+      </div>
+      <p class="small" style="margin-top:10px;">Wandelen: geen wakelock • Breathing: wel wakelock.</p>
+    `;
 
-      for (let i = 0; i < times; i++) {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = "sine";
-        osc.frequency.value = 880;
-        gain.gain.setValueAtTime(0.0001, now + i * 0.25);
-        gain.gain.exponentialRampToValueAtTime(0.2, now + i * 0.25 + 0.02);
-        gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.25 + 0.18);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start(now + i * 0.25);
-        osc.stop(now + i * 0.25 + 0.20);
-      }
-      setTimeout(() => ctx.close(), 600);
-    } catch (e) {}
+    const mobList = document.getElementById('mobList');
+    mobList.innerHTML = '';
+    const checks = active.mobilityChecks || {};
+    MOBILITY.forEach((m, i) => {
+      const id = `m${i}`;
+      const div = document.createElement('div');
+      div.className = 'exercise';
+      const checked = !!checks[id];
+      div.innerHTML = `
+        <div class="ex-left">
+          <div class="ex-title">${m.value} ${m.label}</div>
+          <div class="ex-meta">${m.kind === 'time' ? 'tijd' : 'reps'}</div>
+        </div>
+        <div class="pill" style="cursor:pointer; user-select:none;" data-check="${id}">${checked ? '✓' : '○'}</div>
+      `;
+      mobList.appendChild(div);
+    });
+
+    mobList.addEventListener('click', (e) => {
+      const t = e.target;
+      if(!t.classList.contains('pill')) return;
+      const id = t.getAttribute('data-check');
+      if(!id) return;
+      const a = loadActive();
+      if(!a) return;
+      a.mobilityChecks = a.mobilityChecks || {};
+      a.mobilityChecks[id] = !a.mobilityChecks[id];
+      saveActive(a);
+      t.textContent = a.mobilityChecks[id] ? '✓' : '○';
+    });
+
+    // mobility timer (no wakelock)
+    timers.mobility = makeTimer(DUR.mobilitySec, (left,total) => {
+      const a = loadActive();
+      if(!a) return;
+      a.timers = a.timers || {};
+      a.timers.mobilityLeft = left;
+      saveActive(a);
+    });
+    timers.mobility.left = Math.max(0, active.timers?.mobilityLeft ?? DUR.mobilitySec);
+
+    renderRightTimer('Mobility (25:00)', 'mobility');
+    setModePill('RECOVERY');
+    releaseWakeLock();
+
+    document.getElementById('btnAddWalk').addEventListener('click', () => renderWalkPicker());
+    document.getElementById('btnAddBreath').addEventListener('click', () => renderBreathPicker());
+    document.getElementById('btnFinish').addEventListener('click', () => completeSession());
   }
 
   // -------------------------
-  // Wakelock
+  // Walk
   // -------------------------
-  let wakeLock = null;
-  const wakeStatus = document.getElementById("wakeStatus");
-  function setWakeStatus(on) {
-    wakeStatus.innerHTML = `Wakelock: <b>${on ? "aan" : "uit"}</b>`;
-  }
-
-  async function requestWakeLock() {
-    try {
-      if (!("wakeLock" in navigator)) { setWakeStatus(false); return; }
-      if (wakeLock) return;
-      wakeLock = await navigator.wakeLock.request("screen");
-      setWakeStatus(true);
-      wakeLock.addEventListener("release", () => {
-        wakeLock = null;
-        setWakeStatus(false);
+  function renderWalkPicker(){
+    leftCard.innerHTML = `
+      <h2>Wandelen</h2>
+      <p class="small">Kies duur (geen wakelock).</p>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn rec" data-w="600">10 min</button>
+        <button class="btn rec" data-w="1200">20 min</button>
+        <button class="btn rec" data-w="1800">30 min</button>
+      </div>
+      <div class="hr"></div>
+      <div class="row">
+        <button id="btnBack" class="btn">Terug</button>
+      </div>
+    `;
+    leftCard.querySelectorAll('button[data-w]').forEach(b => {
+      b.addEventListener('click', () => {
+        const sec = Number(b.getAttribute('data-w'));
+        const a = loadActive() || { day: todayKey(), mode:'RECOVERY', phase:'WALK', timers:{} };
+        a.phase = 'WALK';
+        a.timers = a.timers || {};
+        a.timers.walkLeft = sec;
+        saveActive(a);
+        boot();
       });
-    } catch (e) {
-      wakeLock = null;
-      setWakeStatus(false);
-    }
+    });
+    document.getElementById('btnBack').addEventListener('click', () => boot());
+    renderRightNone();
+    setModePill('WALK');
   }
 
-  async function releaseWakeLock() {
-    try {
-      if (wakeLock) {
-        await wakeLock.release();
-        wakeLock = null;
-      }
-    } finally {
-      setWakeStatus(false);
-    }
-  }
+  function renderWalk(active){
+    leftCard.innerHTML = `
+      <h2>Wandelen</h2>
+      <p class="small">Je hoeft het scherm niet aan te houden.</p>
+      <div class="hr"></div>
+      <div class="row">
+        <button id="btnBack" class="btn">Terug</button>
+        <button id="btnFinish" class="btn danger">Finish session</button>
+      </div>
+    `;
 
-  document.addEventListener("visibilitychange", () => {
-    if (document.visibilityState === "visible" && (timer15.running || timer5.running)) {
-      requestWakeLock();
-    }
-  });
+    timers.walk = makeTimer(active.timers.walkLeft ?? 600, (left,total) => {
+      const a = loadActive();
+      if(!a) return;
+      a.timers.walkLeft = left;
+      saveActive(a);
+    });
+    timers.walk.left = Math.max(0, active.timers.walkLeft ?? 600);
+    renderRightTimer('Walk', 'walk');
+    setModePill('WALK');
+    releaseWakeLock();
+
+    document.getElementById('btnBack').addEventListener('click', () => { active.phase = 'MOBILITY'; saveActive(active); boot(); });
+    document.getElementById('btnFinish').addEventListener('click', () => completeSession());
+  }
 
   // -------------------------
-  // Timers
+  // Breathing
   // -------------------------
-  function fmt(sec) {
-    const m = Math.floor(sec / 60);
-    const s = sec % 60;
-    return String(m).padStart(2, "0") + ":" + String(s).padStart(2, "0");
+  function renderBreathPicker(){
+    leftCard.innerHTML = `
+      <h2>Breathing (3-1-6-2)</h2>
+      <p class="small">Kies duur (wakelock aan tijdens timer).</p>
+      <div class="row" style="margin-top:10px;">
+        <button class="btn primary" data-b="300">5 min</button>
+        <button class="btn primary" data-b="600">10 min</button>
+      </div>
+      <div class="hr"></div>
+      <div class="row">
+        <button id="btnBack" class="btn">Terug</button>
+      </div>
+    `;
+    leftCard.querySelectorAll('button[data-b]').forEach(b => {
+      b.addEventListener('click', () => {
+        const sec = Number(b.getAttribute('data-b'));
+        const a = loadActive() || { day: todayKey(), mode:'RECOVERY', phase:'BREATHING', timers:{} };
+        a.phase = 'BREATHING';
+        a.timers = a.timers || {};
+        a.timers.breathLeft = sec;
+        a.timers.breathPhase = 'IN';
+        a.timers.breathPhaseLeft = 3;
+        saveActive(a);
+        boot();
+      });
+    });
+    document.getElementById('btnBack').addEventListener('click', () => boot());
+    renderRightNone();
+    setModePill('BREATHING');
   }
 
-  function makeTimer(totalSeconds, el) {
-    return {
-      total: totalSeconds,
-      left: totalSeconds,
-      running: false,
-      _t: null,
-      render() { el.textContent = fmt(this.left); },
-      start(onDone) {
-        if (this.running) return;
-        this.running = true;
-        this._tick(onDone);
-      },
-      pause() {
-        this.running = false;
-        if (this._t) clearTimeout(this._t);
-        this._t = null;
-      },
-      reset() {
-        this.pause();
-        this.left = this.total;
-        this.render();
-      },
-      setTotal(totalSeconds){
-        this.pause();
-        this.total = totalSeconds;
-        this.left = totalSeconds;
-        this.render();
-      },
-      _tick(onDone) {
-        this.render();
-        if (!this.running) return;
+  const breathSeq = [
+    { phase:'IN', sec:3, scale:1.20 },
+    { phase:'HOLD', sec:1, scale:1.20 },
+    { phase:'OUT', sec:6, scale:0.80 },
+    { phase:'HOLD', sec:2, scale:0.80 },
+  ];
 
-        if (this.left <= 0) {
-          this.running = false;
-          this._t = null;
-          try { onDone && onDone(); } catch {}
-          return;
+  function renderBreathing(active){
+    leftCard.innerHTML = `
+      <h2>Breathing (3-1-6-2)</h2>
+      <div class="breathBox">
+        <div class="ring">
+          <div class="ringInner" id="ringInner">
+            <div>
+              <div class="phase" id="phaseTxt">IN</div>
+              <div class="phaseSub" id="phaseSub">3s</div>
+            </div>
+          </div>
+        </div>
+        <div class="progress"><div id="prog"></div></div>
+        <div class="small" id="totalLeft">—</div>
+      </div>
+      <div class="hr"></div>
+      <div class="row">
+        <button id="btnBack" class="btn">Terug</button>
+        <button id="btnFinish" class="btn danger">Finish session</button>
+      </div>
+    `;
+
+    const ringInner = document.getElementById('ringInner');
+    const phaseTxt = document.getElementById('phaseTxt');
+    const phaseSub = document.getElementById('phaseSub');
+    const prog = document.getElementById('prog');
+    const totalLeft = document.getElementById('totalLeft');
+
+    function setPhase(p){
+      phaseTxt.textContent = p.phase;
+      ringInner.style.transform = `scale(${p.scale})`;
+    }
+
+    // Initialize from active
+    const total = active.timers.breathTotal ?? (active.timers.breathTotal = (active.timers.breathLeft ?? 300));
+
+    function updateUI(){
+      const a = loadActive();
+      if(!a) return;
+      const left = a.timers.breathLeft;
+      const pct = total ? (1 - left/total) * 100 : 0;
+      prog.style.width = `${Math.max(0, Math.min(100, pct))}%`;
+      totalLeft.textContent = `Nog ${fmt(left)}`;
+      phaseTxt.textContent = a.timers.breathPhase;
+      phaseSub.textContent = `${a.timers.breathPhaseLeft}s`;
+      const p = breathSeq.find(x => x.phase === a.timers.breathPhase && ((x.phase==='IN'||x.phase==='OUT') ? true : true)) || breathSeq[0];
+      ringInner.style.transform = `scale(${p.scale})`;
+    }
+
+    // Breathing timer is custom (phase-based)
+    if(timers.breathing) timers.breathing.pause();
+
+    timers.breathing = makeTimer(active.timers.breathLeft ?? 300, (left, totalIgnored) => {
+      const a = loadActive();
+      if(!a) return;
+      a.timers.breathLeft = left;
+      saveActive(a);
+      updateUI();
+    });
+    timers.breathing.left = Math.max(0, active.timers.breathLeft ?? 300);
+
+    // phase tick
+    let phaseTicker = null;
+    function stopPhaseTicker(){ if(phaseTicker) clearInterval(phaseTicker); phaseTicker=null; }
+
+    function startPhaseTicker(){
+      stopPhaseTicker();
+      phaseTicker = setInterval(() => {
+        const a = loadActive();
+        if(!a) return;
+        if(!timers.breathing.running) return;
+        a.timers.breathPhaseLeft = Math.max(0, (a.timers.breathPhaseLeft ?? 0) - 1);
+        if(a.timers.breathPhaseLeft <= 0){
+          // move to next phase
+          const idx = breathSeq.findIndex(x => x.phase === a.timers.breathPhase && x.sec === (a.timers.breathPhaseSec || x.sec));
+          const next = breathSeq[(idx+1) % breathSeq.length];
+          a.timers.breathPhase = next.phase;
+          a.timers.breathPhaseLeft = next.sec;
+          a.timers.breathPhaseSec = next.sec;
+          saveActive(a);
+          // optional: beep at phase change (kept on)
+          beep(1);
+        } else {
+          saveActive(a);
         }
-
-        this._t = setTimeout(() => {
-          this.left -= 1;
-          this._tick(onDone);
-        }, 1000);
-      }
-    };
-  }
-
-  const timer15 = makeTimer(20 * 60, document.getElementById("t15"));
-  const timer5  = makeTimer( 5 * 60, document.getElementById("t5"));
-  timer15.render();
-  timer5.render();
-
-  // -------------------------
-  // Settings (durations)
-  // -------------------------
-  const SET_KEY = "dtt_20plus5_settings_v1";
-  const setCircuit = document.getElementById("setCircuit");
-  const setCarry   = document.getElementById("setCarry");
-
-  function clamp(n, lo, hi){ return Math.max(lo, Math.min(hi, n)); }
-
-  function loadSettings(){
-    try{
-      const raw = localStorage.getItem(SET_KEY);
-      if(!raw) return { circuitMin: 20, carryMin: 5 };
-      const s = JSON.parse(raw);
-      return {
-        circuitMin: clamp(parseInt(s.circuitMin ?? 20, 10) || 20, 10, 30),
-        carryMin:   clamp(parseInt(s.carryMin ?? 5, 10) || 5, 5, 10),
-      };
-    }catch{
-      return { circuitMin: 20, carryMin: 5 };
+        updateUI();
+      }, 1000);
     }
+
+    // Right panel for breathing uses timers.breathing (start/pause/reset), but with wakelock
+    renderRightTimer('Breathing', 'breathing');
+    setModePill('BREATHING');
+
+    // Patch the right panel buttons to also control phaseTicker + wakelock
+    const startBtn = rightInner.querySelector('#btnStart');
+    const pauseBtn = rightInner.querySelector('#btnPause');
+    const resetBtn = rightInner.querySelector('#btnResetT');
+
+    startBtn.addEventListener('click', () => {
+      requestWakeLock();
+      const a = loadActive();
+      if(!a) return;
+      // if no phase init
+      if(!a.timers.breathPhase){ a.timers.breathPhase = 'IN'; a.timers.breathPhaseLeft = 3; }
+      saveActive(a);
+      startPhaseTicker();
+    }, { once:false });
+
+    pauseBtn.addEventListener('click', () => {
+      // pause already handled by renderRightTimer; also stop ticker
+      stopPhaseTicker();
+      releaseWakeLock();
+    }, { once:false });
+
+    resetBtn.addEventListener('click', () => {
+      const a = loadActive();
+      if(!a) return;
+      stopPhaseTicker();
+      a.timers.breathLeft = a.timers.breathTotal ?? (a.timers.breathTotal = (a.timers.breathLeft ?? 300));
+      a.timers.breathPhase = 'IN';
+      a.timers.breathPhaseLeft = 3;
+      a.timers.breathPhaseSec = 3;
+      saveActive(a);
+      timers.breathing.reset();
+      releaseWakeLock();
+      updateUI();
+    }, { once:false });
+
+    // bootstrap phase visuals
+    const a0 = loadActive();
+    if(a0 && !a0.timers.breathPhase){
+      a0.timers.breathPhase = 'IN';
+      a0.timers.breathPhaseLeft = 3;
+      a0.timers.breathPhaseSec = 3;
+      saveActive(a0);
+    }
+    updateUI();
+
+    document.getElementById('btnBack').addEventListener('click', () => {
+      stopPhaseTicker();
+      releaseWakeLock();
+      const a = loadActive();
+      if(a){ a.phase = 'MOBILITY'; saveActive(a); }
+      boot();
+    });
+    document.getElementById('btnFinish').addEventListener('click', () => {
+      stopPhaseTicker();
+      releaseWakeLock();
+      completeSession();
+    });
+
+    // ensure no wakelock until user starts
+    releaseWakeLock();
   }
-  function saveSettings(s){
-    localStorage.setItem(SET_KEY, JSON.stringify(s));
-  }
-
-  function applySettings(s){
-    setCircuit.value = s.circuitMin;
-    setCarry.value   = s.carryMin;
-    timer15.setTotal(s.circuitMin * 60);
-    timer5.setTotal(s.carryMin * 60);
-
-    // Update carry meta/pill text in UI
-    const carryPill = document.querySelector('#carryBox .pill');
-    if (carryPill) carryPill.textContent = s.carryMin + " min";
-    carryMeta.textContent = `${String(s.carryMin).padStart(2,"0")}:00 finisher • wissel zijde wanneer nodig`;
-  }
-
-  let SETTINGS = loadSettings();
-  applySettings(SETTINGS);
-
-
-  // Restore active session (if any) after refresh
-  const existingActive = loadActiveSession();
-  if(existingActive && existingActive.circuit && existingActive.carry){
-    renderSession(existingActive);
-    setActiveState(true);
-  } else {
-    setActiveState(false);
-  }
-
-  function onSettingsChange(){
-    const next = {
-      circuitMin: clamp(parseInt(setCircuit.value,10) || 20, 10, 30),
-      carryMin:   clamp(parseInt(setCarry.value,10) || 5, 5, 10),
-    };
-    SETTINGS = next;
-    saveSettings(next);
-    applySettings(next);
-  }
-  setCircuit.addEventListener("change", onSettingsChange);
-  setCarry.addEventListener("change", onSettingsChange);
-
-
-  function anyTimerRunning() { return timer15.running || timer5.running; }
-
-  function onTimerStart() { requestWakeLock(); }
-  function onTimerStopMaybe() { if (!anyTimerRunning()) releaseWakeLock(); }
-
-  document.getElementById("start15").addEventListener("click", () => {
-    onTimerStart();
-    timer15.start(() => { beep(1); onTimerStopMaybe(); });
-  });
-  document.getElementById("pause15").addEventListener("click", () => { timer15.pause(); onTimerStopMaybe(); });
-  document.getElementById("reset15").addEventListener("click", () => { timer15.reset(); onTimerStopMaybe(); });
-
-  document.getElementById("start5").addEventListener("click", () => {
-    onTimerStart();
-    timer5.start(() => { beep(1); onTimerStopMaybe(); });
-  });
-  document.getElementById("pause5").addEventListener("click", () => { timer5.pause(); onTimerStopMaybe(); });
-  document.getElementById("reset5").addEventListener("click", () => { timer5.reset(); onTimerStopMaybe(); });
 
   // -------------------------
-// Generate + complete active session
-// -------------------------
-
-function resetSessionUI(){
-  sessionList.innerHTML = `<p class="small">Klik <b>Genereer sessie</b> om te starten.</p>`;
-  carryTitle.textContent = "—";
-  const cm = (typeof SETTINGS === "object" && SETTINGS && typeof SETTINGS.carryMin === "number") ? SETTINGS.carryMin : 5;
-  carryMeta.textContent = `${String(cm).padStart(2,"0")}:00 finisher`;
-}
-
-function doGenerate() {
-  const data = generateSession();          // memory NOT committed yet
-  saveActiveSession(data);                 // persist active session across refresh
-  renderSession(data);
-  setActiveState(true);
-
-  // reset timers for the session
-  timer15.reset();
-  timer5.reset();
-}
-
-function completeActiveSession(){
-  const active = loadActiveSession();
-  if(active && active.memNext){
-    // Commit the planned memory changes now (on completion)
-    saveMemory(active.memNext);
+  // Persistence helpers for right timer (generic)
+  // -------------------------
+  function persistActive(){
+    // timers already persist via onTick, this is a no-op helper now
   }
-  clearActiveSession();
-  setActiveState(false);
 
-  // stop/reset timers and release wakelock if needed
-  timer15.reset();
-  timer5.reset();
-  onTimerStopMaybe();
-
-  resetSessionUI();
-}
-
-btnGenerate.addEventListener("click", () => {
-  const active = loadActiveSession();
-  if(active){
-    completeActiveSession();
-  } else {
-    doGenerate();
-  }
-});
-
-  document.getElementById("btnResetMemory").addEventListener("click", () => {
-    // Reset selection memory + any active session
-    localStorage.removeItem(LS_KEY);
-    clearActiveSession();
-    setActiveState(false);
-    sessionList.innerHTML = `<p class="small">Geheugen gewist. Klik <b>Genereer sessie</b>.</p>`;
-    carryTitle.textContent = "—";
-    const cm = (typeof SETTINGS === "object" && SETTINGS && typeof SETTINGS.carryMin === "number") ? SETTINGS.carryMin : 5;
-    carryMeta.textContent = `${String(cm).padStart(2,"0")}:00 finisher`;
-  });
-
-  document.addEventListener("keydown", (e) => {
-    if (e.key.toLowerCase() === "g") {
-      e.preventDefault();
-      document.getElementById("btnGenerate").click();
+  // -------------------------
+  // Session completion
+  // -------------------------
+  function completeSession(){
+    const a = loadActive();
+    if(a && (a.mode === 'FULL' || a.mode === 'MINI') && a.session && a.session.memNext){
+      // commit memory on completion
+      saveMemory(a.session.memNext);
     }
+    clearActive();
+    // keep day state locked until tomorrow OR user resets; this matches your idea
+    // (If you want unlock on finish, uncomment next line)
+    // localStorage.removeItem(LS_DAY_KEY);
+
+    // Stop timers and wakelock
+    Object.values(timers).forEach(t => { try{ t && t.pause && t.pause(); }catch{} });
+    releaseWakeLock();
+
+    confettiBurst();
+    btnMain.textContent = 'Start';
+    btnMain.classList.add('primary');
+    setModePill('—');
+    // Show summary screen
+    leftCard.innerHTML = `
+      <h2>Session complete ✅</h2>
+      <p class="small">Top. Morgen weer een nieuwe gate.</p>
+      <div class="hr"></div>
+      <button id="btnHome" class="btn primary">Terug naar start</button>
+    `;
+    document.getElementById('btnHome').addEventListener('click', () => {
+      // allow new start same day only if you reset; otherwise show locked state
+      boot();
+    });
+    renderRightNone();
+  }
+
+  // -------------------------
+  // Boot / Router
+  // -------------------------
+  function boot(){
+    const day = loadDayState();
+    const active = loadActive();
+
+    if(active){
+      btnMain.textContent = 'Open sessie';
+      // route by phase
+      if(active.phase === 'TRAINING') return renderTraining(active);
+      if(active.phase === 'MOBILITY')  return renderMobility(active);
+      if(active.phase === 'WALK')      return renderWalk(active);
+      if(active.phase === 'BREATHING') return renderBreathing(active);
+    }
+
+    // if day gate is filled but no active session (user decided not to train)
+    if(day && day.modeLocked){
+      btnMain.textContent = 'Resume';
+      leftCard.innerHTML = `
+        <h2>Gate ingevuld (${day.total}/15)</h2>
+        <p class="small">Je hebt vandaag al een gate gezet. Je kunt een sessie starten of resetten.</p>
+        <div class="hr"></div>
+        <div class="row">
+          <button id="btnStartFromLock" class="btn primary">Start sessie</button>
+          <button id="btnResetDay" class="btn danger">Reset vandaag</button>
+        </div>
+      `;
+      renderRightNone();
+      setModePill(day.modeLocked);
+
+      document.getElementById('btnStartFromLock').addEventListener('click', () => {
+        // create active based on locked mode
+        const mode = day.modeLocked;
+        if(mode === 'FULL' || mode === 'MINI'){
+          const s = generateSession();
+          saveActive({ day: todayKey(), mode, phase:'TRAINING', session:s, timers:{
+            circuitLeft: (mode==='FULL'?DUR.fullCircuitSec:DUR.miniCircuitSec),
+            carryLeft: DUR.carrySec,
+          }});
+        } else {
+          saveActive({ day: todayKey(), mode, phase:'MOBILITY', timers:{ mobilityLeft: DUR.mobilitySec }, mobilityChecks: {} });
+        }
+        boot();
+      });
+
+      document.getElementById('btnResetDay').addEventListener('click', () => {
+        localStorage.removeItem(LS_DAY_KEY);
+        clearActive();
+        boot();
+      });
+      return;
+    }
+
+    // default: gate
+    btnMain.textContent = 'Start';
+    renderGate(null);
+  }
+
+  // -------------------------
+  // Main button
+  // -------------------------
+  btnMain.addEventListener('click', () => {
+    const active = loadActive();
+    const day = loadDayState();
+    if(active){
+      // already routed by boot
+      boot();
+      return;
+    }
+    if(day && day.modeLocked){
+      // show locked screen
+      boot();
+      return;
+    }
+    renderGate(null);
   });
 
+  // Reset button
+  btnReset.addEventListener('click', () => {
+    localStorage.removeItem(LS_MEM_KEY);
+    localStorage.removeItem(LS_ACTIVE_KEY);
+    localStorage.removeItem(LS_DAY_KEY);
+    Object.values(timers).forEach(t => { try{ t && t.pause && t.pause(); }catch{} });
+    releaseWakeLock();
+    boot();
+  });
+
+  // Visibility: re-request wakelock only if a wakelock-eligible timer is running
+  document.addEventListener('visibilitychange', () => {
+    if(document.visibilityState !== 'visible') return;
+    // Only if circuit/carry/breathing running
+    const eligibleRunning = (timers.circuit && timers.circuit.running) || (timers.carry && timers.carry.running) || (timers.breathing && timers.breathing.running);
+    if(eligibleRunning) requestWakeLock();
+  });
+
+  // First boot
+  setWakeStatus(false);
+  renderRightNone();
+  boot();
 })();
 </script>
 </body>
