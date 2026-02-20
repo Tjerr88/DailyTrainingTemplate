@@ -190,6 +190,7 @@
       <span id="wakeStatus" class="pill">Wakelock: <strong>uit</strong></span>
       <span class="pill">Beep: <strong>aan</strong></span>
       <span id="modePill" class="pill">Mode: <strong>—</strong></span>
+      <span id="trainPill" class="pill">DTT: <strong>0 / 60</strong></span>
     </div>
     <p class="small" style="margin-top:10px;">Gate 1× per dag. Sluit je de app? Dan ga je exact verder waar je was gebleven.</p>
   </div>
@@ -205,6 +206,7 @@
   const LS_MEM_KEY = "dtt_memory_v2";
   const LS_ACTIVE_KEY = "dtt_active_v2";
   const LS_DAY_KEY = "dtt_day_v2";
+  const LS_TRAIN_COUNT_KEY = "dtt_train_count_v1";
 
   const DUR = { fullCircuitSec: 20*60, miniCircuitSec: 15*60, carrySec: 5*60, mobilitySec: 25*60 };
 
@@ -265,6 +267,124 @@
   // --- Persist helpers
   function loadJSON(k){ try{ const r = localStorage.getItem(k); return r? JSON.parse(r) : null; }catch{ return null; } }
   function saveJSON(k,v){ localStorage.setItem(k, JSON.stringify(v)); }
+
+  // --- Training session counter (FULL/MINI only)
+  function loadTrainCount(){ return loadJSON(LS_TRAIN_COUNT_KEY) || { n: 0, checkpointDone: false }; }
+  function saveTrainCount(v){ saveJSON(LS_TRAIN_COUNT_KEY, v); }
+
+  function updateTrainPill(){
+    const tc = loadTrainCount();
+    const n = tc.n || 0;
+    const el = document.getElementById("trainPill");
+    if(!el) return;
+    const suffix = (n >= 60) ? " • Checkpoint" : "";
+    el.innerHTML = `DTT: <strong>${n} / 60</strong>${suffix}`;
+  }
+
+  // --- Minimal modal (confirm + checkpoint)
+  const appModal = document.getElementById("appModal");
+  const modalTitleEl = document.getElementById("modalTitle");
+  const modalTextEl = document.getElementById("modalText");
+  const modalBodyEl = document.getElementById("modalBody");
+  const modalActionsEl = document.getElementById("modalActions");
+
+  function closeModal(){
+    if(!appModal) return;
+    appModal.classList.remove("show");
+    appModal.setAttribute("aria-hidden", "true");
+    if(modalBodyEl) modalBodyEl.innerHTML = "";
+    if(modalActionsEl) modalActionsEl.innerHTML = "";
+  }
+
+  function openModal({title="DTT", text="—", bodyHTML="", actionsHTML=""} = {}){
+    if(!appModal) return;
+    if(modalTitleEl) modalTitleEl.textContent = title;
+    if(modalTextEl) modalTextEl.innerHTML = text;
+    if(modalBodyEl) modalBodyEl.innerHTML = bodyHTML || "";
+    if(modalActionsEl) modalActionsEl.innerHTML = actionsHTML || "";
+    appModal.classList.add("show");
+    appModal.setAttribute("aria-hidden", "false");
+  }
+
+  if(appModal){
+    appModal.addEventListener("click", (e) => { if(e.target === appModal) closeModal(); });
+  }
+
+  // --- Checkpoint: bell-up check (after 60 training sessions)
+  function showCheckpointModal(){
+    const items = [
+      {k:"rpe", t:"Gemiddelde RPE < 7 (laatste 2 weken)"},
+      {k:"pain", t:"Geen pijntjes / irritatie"},
+      {k:"tech", t:"Techniek voelt strak en stabiel"},
+      {k:"sleep", t:"Slaap / herstel stabiel"},
+      {k:"miss", t:"Laatste 2 weken geen sessies gemist"},
+    ];
+
+    const body = `
+      <div class="modalList">
+        ${items.map(i => `
+          <div class="modalItem">
+            <label>
+              <input type="checkbox" data-ck="${i.k}">
+              <span>${i.t}</span>
+            </label>
+          </div>
+        `).join("")}
+      </div>
+      <p class="modalText" style="margin-top:10px;">Score 4–5: je <b>mag</b> een bell omhoog. Score 0–3: blijf nog even bij dezelfde bell.</p>
+    `;
+
+    const actions = `
+      <button id="btnCpScore" class="btn primary">Check score</button>
+      <button id="btnCpLater" class="btn">Later</button>
+    `;
+
+    openModal({
+      title: "Checkpoint (60 sessies)",
+      text: "Je hebt 60 DTT-training sessies gedaan. Tijd voor een korte check.",
+      bodyHTML: body,
+      actionsHTML: actions
+    });
+
+    document.getElementById("btnCpLater").addEventListener("click", () => {
+      const tc = loadTrainCount();
+      tc.checkpointDone = true; // don't keep nudging
+      saveTrainCount(tc);
+      updateTrainPill();
+      closeModal();
+    });
+
+    document.getElementById("btnCpScore").addEventListener("click", () => {
+      const checks = Array.from(document.querySelectorAll('#modalBody input[type="checkbox"][data-ck]'));
+      const score = checks.reduce((a, c) => a + (c.checked ? 1 : 0), 0);
+
+      const msg = (score >= 4)
+        ? `<b>${score}/5</b> — Je <b>mag</b> een bell omhoog. Reset daarna je teller (program reset) en begin opnieuw bij 0/60.`
+        : `<b>${score}/5</b> — Blijf bij dezelfde bell. Richt je op slaap/tempo/techniek en pak over 2–3 weken opnieuw een checkmoment.`;
+
+      // Mark as done (user can still choose to ignore)
+      const tc = loadTrainCount();
+      tc.checkpointDone = true;
+      saveTrainCount(tc);
+      updateTrainPill();
+
+      openModal({
+        title: "Resultaat",
+        text: msg,
+        bodyHTML: "",
+        actionsHTML: `<button id="btnCpOk" class="btn primary">Oké</button>`
+      });
+      document.getElementById("btnCpOk").addEventListener("click", () => closeModal());
+    });
+  }
+
+  function maybeShowCheckpoint(){
+    const tc = loadTrainCount();
+    if((tc.n || 0) >= 60 && !tc.checkpointDone){
+      showCheckpointModal();
+    }
+  }
+
 
   // -------------------------
   // Wakelock
@@ -703,6 +823,9 @@ function computeBand(total){
 
     updateUI();
     renderRightNone();
+    // If you hit 60 training sessions, show the bell-up checkpoint once.
+    try{ maybeShowCheckpoint(); }catch{}
+
     setModePill('—');
   }
 
@@ -887,6 +1010,9 @@ function computeBand(total){
     });
     document.getElementById('btnBack').addEventListener('click', () => boot());
     renderRightNone();
+    // If you hit 60 training sessions, show the bell-up checkpoint once.
+    try{ maybeShowCheckpoint(); }catch{}
+
     setModePill('WALK');
   }
 
@@ -947,6 +1073,9 @@ function computeBand(total){
     });
     document.getElementById('btnBack').addEventListener('click', () => boot());
     renderRightNone();
+    // If you hit 60 training sessions, show the bell-up checkpoint once.
+    try{ maybeShowCheckpoint(); }catch{}
+
     setModePill('BREATHING');
   }
 
@@ -1127,7 +1256,12 @@ function computeBand(total){
     if(a && (a.mode === 'FULL' || a.mode === 'MINI') && a.session && a.session.memNext){
       // commit memory on completion
       saveMemory(a.session.memNext);
-    }
+        const tc = loadTrainCount();
+    tc.n = (tc.n || 0) + 1;
+    // When you reset program, this goes back to 0.
+    saveTrainCount(tc);
+    updateTrainPill();
+}
     clearActive();
     // keep day state locked until tomorrow OR user resets; this matches your idea
     // (If you want unlock on finish, uncomment next line)
@@ -1153,12 +1287,17 @@ function computeBand(total){
       boot();
     });
     renderRightNone();
+    // If you hit 60 training sessions, show the bell-up checkpoint once.
+    try{ maybeShowCheckpoint(); }catch{}
+
   }
 
   // -------------------------
   // Boot / Router
   // -------------------------
   function boot(){
+    updateTrainPill();
+    
     const day = loadDayState();
     const active = loadActive();
 
@@ -1184,6 +1323,9 @@ function computeBand(total){
         </div>
       `;
       renderRightNone();
+    // If you hit 60 training sessions, show the bell-up checkpoint once.
+    try{ maybeShowCheckpoint(); }catch{}
+
       setModePill(day.modeLocked);
 
       document.getElementById('btnStartFromLock').addEventListener('click', () => {
@@ -1233,14 +1375,44 @@ function computeBand(total){
     renderGate(null);
   });
 
-  // Reset button
+  // Reset button (confirm)
   btnReset.addEventListener('click', () => {
-    localStorage.removeItem(LS_MEM_KEY);
-    localStorage.removeItem(LS_ACTIVE_KEY);
-    localStorage.removeItem(LS_DAY_KEY);
-    Object.values(timers).forEach(t => { try{ t && t.pause && t.pause(); }catch{} });
-    releaseWakeLock();
-    boot();
+    openModal({
+      title: "Program reset",
+      text: "Dit wist: selectie-geheugen, actieve sessie, gate van vandaag, én je DTT teller.",
+      bodyHTML: "",
+      actionsHTML: `
+        <button id="btnDoReset" class="btn danger">Reset</button>
+        <button id="btnCancelReset" class="btn">Annuleer</button>
+      `
+    });
+
+    document.getElementById("btnCancelReset").addEventListener("click", () => closeModal());
+
+    // 2-tap safety
+    const btn = document.getElementById("btnDoReset");
+    let armed = false;
+    btn.textContent = "Tik nogmaals om te bevestigen";
+    btn.classList.remove("danger");
+    btn.classList.add("mid");
+
+    btn.addEventListener("click", () => {
+      if(!armed){
+        armed = true;
+        btn.textContent = "Bevestig reset";
+        btn.classList.remove("mid");
+        btn.classList.add("danger");
+        return;
+      }
+      localStorage.removeItem(LS_MEM_KEY);
+      localStorage.removeItem(LS_ACTIVE_KEY);
+      localStorage.removeItem(LS_DAY_KEY);
+      localStorage.removeItem(LS_TRAIN_COUNT_KEY);
+      Object.values(timers).forEach(t => { try{ t && t.pause && t.pause(); }catch{} });
+      releaseWakeLock();
+      closeModal();
+      boot();
+    });
   });
 
   // Visibility: re-request wakelock only if a wakelock-eligible timer is running
@@ -1254,6 +1426,9 @@ function computeBand(total){
   // First boot
   setWakeStatus(false);
   renderRightNone();
+    // If you hit 60 training sessions, show the bell-up checkpoint once.
+    try{ maybeShowCheckpoint(); }catch{}
+
   boot();
 })();
 </script>
